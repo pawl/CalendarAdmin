@@ -14,6 +14,13 @@ It allows you to add an "Add Event" button above your calendar so your users can
 * Email is handled using Mandrill.
 * Alembic is used for database migrations.
 
+### Additional Facts About Database
+* The models for the database tables are here: https://github.com/pawl/CalendarAdmin/blob/master/application/models.py
+* The database tables are generated during the setup instructions.
+* You will need to be familiar with SQLAlchemy.
+  * This guide is helpful for understanding how SQLAlchemy is used: https://pythonhosted.org/Flask-SQLAlchemy/queries.html
+  * This guide is helpful for understanding relations: http://docs.sqlalchemy.org/en/rel_0_9/orm/relationships.html
+
 ### Setup For Development
 1. Run "pip install -r requirements/dev.txt" to install requirements.
 2. Initialize the DB: https://github.com/albertogg/flask-bootstrap-skel#initialize-db
