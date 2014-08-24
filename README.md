@@ -16,7 +16,7 @@ It allows you to add an "Add Event" button above your calendar so your users can
 
 ### Additional Facts About Database
 * The models for the database tables are here: https://github.com/pawl/CalendarAdmin/blob/master/application/models.py
-* The database tables are generated during the setup instructions.
+* The database tables are generated during the setup instructions (based on the models).
 * You will need to be familiar with SQLAlchemy.
   * This guide is helpful for understanding how SQLAlchemy is used: https://pythonhosted.org/Flask-SQLAlchemy/queries.html
   * This guide is helpful for understanding relations: http://docs.sqlalchemy.org/en/rel_0_9/orm/relationships.html
