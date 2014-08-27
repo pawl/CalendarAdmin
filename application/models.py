@@ -22,6 +22,10 @@ class User(db.Model):
 	def __repr__(self):
 		return self.name
 		
+<<<<<<< HEAD
+=======
+# for many-to-many relation, many users have the calendar (and vice versa)
+>>>>>>> a8d7996e7fc7fc06d214069aaf77b02e972baccb
 users_and_calendars = db.Table('users_and_calendars',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('calendar_id', db.Integer, db.ForeignKey('calendar.id'))
@@ -81,4 +85,8 @@ class Location(db.Model):
 	events = db.relationship("Event", backref='location')
 	
 	def __repr__(self):
+<<<<<<< HEAD
 		return self.title
+=======
+		return self.title
+>>>>>>> a8d7996e7fc7fc06d214069aaf77b02e972baccb
