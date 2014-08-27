@@ -22,6 +22,7 @@ class User(db.Model):
 	def __repr__(self):
 		return self.name
 		
+# for many-to-many relation, many users have the calendar (and vice versa)
 users_and_calendars = db.Table('users_and_calendars',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('calendar_id', db.Integer, db.ForeignKey('calendar.id'))
