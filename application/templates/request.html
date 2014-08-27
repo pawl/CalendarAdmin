@@ -1,0 +1,147 @@
+{% extends 'admin/master.html' %}
+{% import 'admin/lib.html' as lib with context %}
+
+{% block head %}
+    {{ super() }}
+    {{ lib.form_css() }}
+	<style>
+		#summary, #start, #end, #description, #requester_email, #requester_name {
+			width: 100%;
+		}
+		.panel-title {
+			display: inline-block;
+			font-size: 1.7em;
+			font-weight: bold;
+			padding: 5px 15px;
+		}
+		.panel {
+			padding-top: 0px;
+			padding-left: 0px;
+			margin:0 auto;
+			width:550px
+		}
+	</style>
+{% endblock %}
+
+{% block page_body %}
+	<div style="margin-top:100px">
+		<div class="container">
+			<div class="panel panel-primary" style="">
+				<div class="panel-heading">
+					<h2 class="panel-title">New Event Request</h2>
+				</div>
+				<div class="panel-body">
+				
+					<form action="" method="POST" class="form-horizontal" enctype="multipart/form-data">
+						<div style="display:none;">{{ form.csrf_token() }}</div>
+						
+						<div class="form-group">
+							<label for="summary" class="col-lg-3 control-label">Event Title</label>
+							<div class="col-lg-9">
+								{{ form.summary }}
+								{% if form.summary.errors %}
+								<ul>
+									{% for e in form.summary.errors %}
+									<li>{{ e }}</li>
+									{% endfor %}
+								</ul>
+								{% endif %}
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="requester_name" class="col-lg-3 control-label">Your Name</label>
+							<div class="col-lg-9">
+								{{ form.requester_name }}
+								{% if form.requester_name.errors %}
+								<ul>
+									{% for e in form.requester_name.errors %}
+									<li>{{ e }}</li>
+									{% endfor %}
+								</ul>
+								{% endif %}
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="requester_email" class="col-lg-3 control-label">Your E-mail</label>
+							<div class="col-lg-9">
+								{{ form.requester_email }}
+								{% if form.requester_email.errors %}
+								<ul>
+									{% for e in form.requester_email.errors %}
+									<li>{{ e }}</li>
+									{% endfor %}
+								</ul>
+								{% endif %}
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="start" class="col-lg-3 control-label">Start Time</label>
+							<div class="col-lg-9">
+								<input data-role="datetimepicker" id="start" name="start" type="text" value="">
+								{% if form.start.errors %}
+								<ul>
+									{% for e in form.start.errors %}
+									<li>{{ e }}</li>
+									{% endfor %}
+								</ul>
+								{% endif %}
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="end" class="col-lg-3 control-label">End Time</label>
+							<div class="col-lg-9">
+								<input data-role="datetimepicker" id="end" name="end" type="text" value="">
+								{% if form.end.errors %}
+								<ul>
+									{% for e in form.end.errors %}
+									<li>{{ e }}</li>
+									{% endfor %}
+								</ul>
+								{% endif %}
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="description" class="col-lg-3 control-label">Event Description</label>
+							<div class="col-lg-9">
+								{{ form.description }}
+								{% if form.description.errors %}
+								<ul>
+									{% for e in form.description.errors %}
+									<li>{{ e }}</li>
+									{% endfor %}
+								</ul>
+								{% endif %}
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="location" class="col-lg-3 control-label">Event Location</label>
+							<div class="col-lg-9">
+								{{ form.location }}
+								{% if form.location.errors %}
+								<ul>
+									{% for e in form.location.errors %}
+									<li>{{ e }}</li>
+									{% endfor %}
+								</ul>
+								{% endif %}
+							</div>
+						</div>
+						<div class="form-group">
+							<div class="col-lg-offset-3 col-lg-9">
+								<button type="submit" class="btn btn-default">
+									Submit Request
+								</button>
+							</div>
+						</div>
+					</form>
+
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block tail %}
+  {{ super() }}
+  {{ lib.form_js() }}
+{% endblock %}

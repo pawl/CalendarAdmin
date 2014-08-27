@@ -1,0 +1,63 @@
+{% macro menu() %}
+  {% for item in admin_view.admin.menu() %}
+    {% if item.is_category() %}
+      {% set children = item.get_children() %}
+      {% if children %}
+        {% if item.is_active(admin_view) %}<li class="active dropdown">{% else %}<li class="dropdown">{% endif %}
+          <a class="dropdown-toggle" data-toggle="dropdown" href="javascript:void(0)">{{ item.name }}<b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            {% for child in children %}
+              {% if child.is_active(admin_view) %}<li class="active">{% else %}<li>{% endif %}
+                <a href="{{ child.get_url() }}">{{ child.name }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        </li>
+      {% endif %}
+    {% else %}
+      {% if item.is_accessible() and item.is_visible() %}
+        {% if item.is_active(admin_view) %}<li class="active">{% else %}<li>{% endif %}
+          <a href="{{ item.get_url() }}">
+		  {# TODO: add ICON to the model rather than hardcoding #}
+		  {% if item.name == "Approved Venues" %}<span class="glyphicon glyphicon-home"></span>
+		  {% elif item.name == "My Calendars" %}<span class="glyphicon glyphicon-calendar"></span> 
+		  {% elif item.name == "Pending Events" %}<span class="glyphicon glyphicon-time"></span> 
+		  {% endif %}
+		  {{ item.name }}</a>
+        </li>
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+{% endmacro %}
+
+{% macro menu_links() %}
+  {% for item in admin_view.admin.menu_links() %}
+    {% if item.is_accessible() and item.is_visible() %}
+      <li>
+        <a href="{{ item.get_url() }}">{% if item.name == "Logout" %}<span class="glyphicon glyphicon-log-out"></span>
+		  {% elif item.name == "Login With Google" %}<span class="glyphicon glyphicon-log-in"></span> 
+		  {% elif item.name == "User Guide" %}<span class="glyphicon glyphicon-book"></span> 
+		  {% endif %}
+		  {{ item.name }}</a>
+      </li>
+    {% endif %}
+  {% endfor %}
+{% endmacro %}
+
+{% macro messages() %}
+  {% with messages = get_flashed_messages(with_categories=True) %}
+    {% if messages %}
+      {% for category, m in messages %}
+        {% if category %}
+        {% set mapping = {'message': 'info', 'error': 'danger'} %}
+        <div class="alert alert-{{ mapping.get(category, 'warning') }} alert-dismissable">
+        {% else %}
+        <div class="alert alert-dismissable">
+        {% endif %}
+	      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          {{ m }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+{% endmacro %}
