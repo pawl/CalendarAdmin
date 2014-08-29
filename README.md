@@ -13,6 +13,7 @@ It allows you to add an "Add Event" button above your calendar so your users can
 * Admin interface is using the SB Admin 2 theme: http://startbootstrap.com/template-overviews/sb-admin-2/
 * Email is handled using Mandrill.
 * Alembic is used for database migrations.
+* Uses Imgur's API for hosting location images and resizing. Thanks Imgur!
 
 ### Additional Facts About Database
 * The models for the database tables are here: https://github.com/pawl/CalendarAdmin/blob/master/application/models.py
@@ -34,7 +35,9 @@ It allows you to add an "Add Event" button above your calendar so your users can
       * GOOGLE_CUSTOMER_KEY  - Use "CLIENT ID"
       * GOOGLE_CUSTOMER_SECRET - Use "CLIENT SECRET"
  * MANDRILL_API_KEY - Get an API key from Mandrill and follow their instructions to set the appropriate DNS settings on your domain. This is required to send email.
+ * IMGUR_ID - Register your application with Imgur to post anonymously. You just need the client_id. This is for the images of locations.
  * ENCRYPTION_KEY - any 16 or 32 characters.
+5. To get image processing working for the locations view, you may need to apt-get some additional libraries: http://askubuntu.com/a/272095
 
 Your etc/environment file should end up having these lines:
 ```
@@ -46,12 +49,12 @@ GOOGLE_CUSTOMER_KEY='secret'
 GOOGLE_CUSTOMER_SECRET='secret'
 MEETUP_CUSTOMER_KEY='secret'
 MEETUP_CUSTOMER_SECRET='secret'
-
+IMGUR_ID='aaaaaaaaaaaaaaa'
 ```
 
 ### Setup For Production
 * Set environmental variables on heroku:
- * heroku config:add PRODUCTION_SETTINGS='production_settings.py' MANDRILL_API_KEY='secret' SECRET_KEY='secret' DOMAIN_NAME='www.yourdomain.com' ENCRYPTION_KEY='secret' GOOGLE_CUSTOMER_KEY='secret' GOOGLE_CUSTOMER_SECRET='secret' MEETUP_CUSTOMER_KEY='secret' MEETUP_CUSTOMER_SECRET='secret'
+ * heroku config:add PRODUCTION_SETTINGS='production_settings.py' MANDRILL_API_KEY='secret' SECRET_KEY='secret' DOMAIN_NAME='www.yourdomain.com' ENCRYPTION_KEY='secret' GOOGLE_CUSTOMER_KEY='secret' GOOGLE_CUSTOMER_SECRET='secret' MEETUP_CUSTOMER_KEY='secret' MEETUP_CUSTOMER_SECRET='secret' IMGUR_ID='aaaaaaaaaaaaaaa'
   * heroku config:set PYTHONPATH='fakepath'
 * https://github.com/albertogg/flask-bootstrap-skel#production-configuration
 
