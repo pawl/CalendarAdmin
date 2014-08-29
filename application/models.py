@@ -77,6 +77,8 @@ class Location(db.Model):
 	__tablename__ = 'location'
 	id = db.Column(db.Integer, primary_key=True)
 	title = db.Column(db.String(256))
+	image_url = db.Column(db.String(256))
+	description = db.Column(db.Text())
 	
 	calendar_id = db.Column(db.Integer, db.ForeignKey('calendar.id')) 
 	events = db.relationship("Event", backref='location')

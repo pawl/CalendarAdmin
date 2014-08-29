@@ -47,16 +47,13 @@ class EventView(CustomModelView):
 	def request_view(self, calendar_id, redirect_url):
 		# ensure calendar id is enabled
 		try:
-			print decrypt_string(calendar_id),
 			result_calendar = Calendar.query.filter(db.and_(Calendar.id == unicode(decrypt_string(calendar_id)), Calendar.enabled == True)).one()
 		except NoResultFound:
 			flash('Calendar disabled or calendar does not exist. Ensure URL was entered correctly.')
 			return redirect('/')
-			
-		self.calendar_id = decrypt_string(calendar_id)
-		form = self.create_form()
 		
-		form.__delitem__('calendar')
+		form = self.create_form()
+		form.__delitem__('calendar') # remove calendar as a selection option from the form - the URL selects the calendar
 		if request.method == 'POST' and form.validate():
 			event = Event()
 			form.populate_obj(event)
@@ -96,8 +93,11 @@ class EventView(CustomModelView):
 				return redirect(unescaped_url, code=302) # TODO: need to redirect to url given by user in request
 			else:
 				return redirect("http://"+unescaped_url, code=302) # TODO: need to redirect to url given by user in request
-
-		return self.render('request.html', form=form)
+		
+		# location information dictionary for form
+		locations = [{'id': location.id, 'image': location.image_url, 'description': location.description} for location in result_calendar.locations] 
+		
+		return self.render('request.html', form=form, locations=locations)
 		
 	@action('approve', 'Approve')
 	def action_approve(self, ids):

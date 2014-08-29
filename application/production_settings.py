@@ -14,6 +14,7 @@ MANDRILL_DEFAULT_FROM = 'admin@calendaradmin.com'
 SECRET_KEY = os.environ['SECRET_KEY']
 DOMAIN_NAME = os.environ['DOMAIN_NAME']
 PORT = 80
+IMGUR_ID = os.environ['IMGUR_ID']
 DEBUG = False
 RELOAD = False
 CSRF_ENABLED = True

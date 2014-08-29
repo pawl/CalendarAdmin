@@ -5,9 +5,9 @@ from logging.config import fileConfig
 
 import sys
 import os.path
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
-	
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+print os.getcwd()
 from application import app, db
 
 

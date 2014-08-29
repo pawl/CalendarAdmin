@@ -2,15 +2,16 @@ from authomatic.providers import oauth2, oauth1
 import authomatic
 import os
 # Get application base dir.
-_basedir = os.path.abspath(os.path.dirname(__file__))
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 STATIC_ROOT = 'static'
-SQLALCHEMY_DATABASE_URI = "sqlite:///db.sqlite3"
+SQLALCHEMY_DATABASE_URI = "sqlite:////" + os.path.join(basedir, 'db.sqlite3') # alembic won't work without an absolute path
 SQLALCHEMY_ECHO = False
 MANDRILL_API_KEY = os.environ['MANDRILL_API_KEY']
 MANDRILL_DEFAULT_FROM = 'admin@calendaradmin.com'
 SECRET_KEY = os.environ['SECRET_KEY']
 PORT = 8080
+IMGUR_ID = os.environ['IMGUR_ID']
 DOMAIN_NAME = os.environ['DOMAIN_NAME'] + ":" + str(PORT)
 DEBUG = True
 RELOAD = True

@@ -17,4 +17,7 @@ pytz==2014.3
 virtualenv==1.11.6
 alembic==0.6.5
 Flask-WTF==0.9.5
+six==1.7.3
+requests==2.3.0
+-e git://github.com/errkk/gitpil.git#egg=PIL
 -e git://github.com/mrjoes/flask-admin.git#egg=Flask-Admin
