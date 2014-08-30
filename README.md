@@ -60,3 +60,8 @@ IMGUR_ID='aaaaaaaaaaaaaaa'
 
 ### TODO
 * Add meetup support.
+* Add eventbrite support.
+* Improve styling on front page.
+* Improve styling on requests page.
+* Write unit test for requesting an event.
+* Allow scheduling repeating classes (need to be careful not to let classes run indefinitely).
