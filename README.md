@@ -2,7 +2,15 @@ Calendar Admin
 ---
 
 Calendar Admin adds the ability to send requests to the administrators of your Google Calendar to have events added. 
-It allows you to add an "Add Event" button above your calendar so your users can request events.
+
+It allows you to generate a link to use for an "Add Event" button above your calendar, so your users can request to have events added to your calendar.
+
+![Alt text](https://github.com/pawl/CalendarAdmin/blob/master/screenshots/add_event.png "Add Event Button")
+
+The user is taken to an event request form, which is approved or denied by calendar administrators once it is submitted:
+
+![Alt text](https://github.com/pawl/CalendarAdmin/blob/master/screenshots/event_request_form.png "Request Form")
+
 
 ### Project Facts
 * Uses Python's Flask Web Framework with the Flask-Admin extension.
