@@ -7,7 +7,7 @@ It allows you to generate a link to use for an "Add Event" button above your cal
 
 ![Alt text](https://github.com/pawl/CalendarAdmin/blob/master/screenshots/add_event.png "Add Event Button")
 
-The user submits requests through an event request form.
+The user submits their request through an event request form.
 
 ![Alt text](https://github.com/pawl/CalendarAdmin/blob/master/screenshots/event_request_form.png "Request Form")
 
