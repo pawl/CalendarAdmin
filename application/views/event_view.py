@@ -52,6 +52,7 @@ class EventView(CustomModelView):
 			flash('Calendar disabled or calendar does not exist. Ensure URL was entered correctly.')
 			return redirect('/')
 		
+		self.calendar_id = decrypt_string(calendar_id) # used in _get_parent_list_location
 		form = self.create_form()
 		form.__delitem__('calendar') # remove calendar as a selection option from the form - the URL selects the calendar
 		if request.method == 'POST' and form.validate():
@@ -61,7 +62,7 @@ class EventView(CustomModelView):
 			db.session.add(event)
 			db.session.commit()
 
-			users = Calendar.query.filter(Calendar.id == decrypt_string(calendar_id)).one().users
+			users = Calendar.query.filter(Calendar.id == self.calendar_id).one().users
 			approve_url = app.config['DOMAIN_NAME'] + '/event/approve/' + encrypt_string(event.id)
 			deny_url = app.config['DOMAIN_NAME'] + '/event/deny/' + encrypt_string(event.id)
 			modify_url = app.config['DOMAIN_NAME'] + '/event/modify/' + encrypt_string(event.id)
