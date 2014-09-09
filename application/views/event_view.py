@@ -5,9 +5,9 @@ import wtforms
 
 from application.views.custom_model_view import CustomModelView
 from wtforms import form, fields, validators
-from wtforms.validators import ValidationError
+from wtforms.validators import ValidationError, required
 from application.models import Calendar, Event, Location, User
-from application.helpers import decrypt_string, is_valid_credentials, is_invalid_credentials, credentials, encrypt_string
+from application.helpers import decrypt_string, is_valid_credentials, credentials, encrypt_string
 from application import app, db, mandrill, authomatic
 from flask import request, redirect, flash, url_for, g
 from flask.ext.admin import expose
@@ -22,11 +22,11 @@ class EventView(CustomModelView):
 	column_labels = {'summary': 'Event Title', 'start': 'Start Time', 'end': 'End Time', 'description': 'Event Description'}
 		
 	def must_be_future(form, field):
-		if form.start.data < datetime.datetime.now():
+		if form.start.data and (form.start.data < datetime.datetime.now()):
 			raise ValidationError('Start time must be greater than current time.')
 	# add end date must be greater than start date validation
 	def end_must_be_greater(form, field):
-		if form.end.data < form.start.data:
+		if form.end.data and form.start.data and (form.end.data < form.start.data):
 			raise ValidationError('End date must be greater than the start date.')
 	#TODO: combine start_must_not_conflict and end_must_not_conflict?
 	def start_must_not_conflict(form, field):
@@ -38,8 +38,8 @@ class EventView(CustomModelView):
 			raise ValidationError('End time conflicts with another request for the same time.')
 			
 	form_args = dict(
-		end=dict(validators=[end_must_be_greater, end_must_not_conflict], format='%m/%d/%Y %I:%M %p'),
-		start=dict(validators=[start_must_not_conflict, must_be_future],format='%m/%d/%Y %I:%M %p'),
+		end=dict(validators=[required(), end_must_be_greater, end_must_not_conflict], format='%m/%d/%Y %I:%M %p'),
+		start=dict(validators=[required(), start_must_not_conflict, must_be_future],format='%m/%d/%Y %I:%M %p'),
 		requester_email=dict(validators=[wtforms.validators.Email(message=u'Invalid email address.')])
 	)
 	
@@ -52,7 +52,6 @@ class EventView(CustomModelView):
 			flash('Calendar disabled or calendar does not exist. Ensure URL was entered correctly.')
 			return redirect('/')
 		
-		self.calendar_id = decrypt_string(calendar_id) # used in _get_parent_list_location
 		form = self.create_form()
 		form.__delitem__('calendar') # remove calendar as a selection option from the form - the URL selects the calendar
 		if request.method == 'POST' and form.validate():
@@ -62,7 +61,7 @@ class EventView(CustomModelView):
 			db.session.add(event)
 			db.session.commit()
 
-			users = Calendar.query.filter(Calendar.id == self.calendar_id).one().users
+			users = Calendar.query.filter(Calendar.id == decrypt_string(calendar_id)).one().users
 			approve_url = app.config['DOMAIN_NAME'] + '/event/approve/' + encrypt_string(event.id)
 			deny_url = app.config['DOMAIN_NAME'] + '/event/deny/' + encrypt_string(event.id)
 			modify_url = app.config['DOMAIN_NAME'] + '/event/modify/' + encrypt_string(event.id)
@@ -107,7 +106,7 @@ class EventView(CustomModelView):
 			for event_object in Event.query.filter(db.and_(Event.id.in_(ids))).all():
 				start = event_object.start.isoformat() #proper rfc 3339 time format for google calendar api
 				end = event_object.end.isoformat()
-				timezone = event_object.calendar.timezone
+				timezone = event_object.calendar.timezone # without the timezone, you have specify an offset as part of the dateTime
 				requestbody = """{
 				 "start": {
 				  "dateTime": "%s",
@@ -158,7 +157,7 @@ class EventView(CustomModelView):
 	@expose('/approve/<id>', methods=('GET', 'POST'))
 	def approve_view(self, id):
 		# TODO: consolidate this into a function if possible
-		if is_invalid_credentials():
+		if not is_valid_credentials():
 			return redirect(url_for('login', next=request.url))
 		# TODO: give accurate indication of success
 		id = decrypt_string(id)
@@ -170,7 +169,7 @@ class EventView(CustomModelView):
 		
 	@expose('/deny/<id>', methods=('GET', 'POST'))
 	def deny_view(self, id):
-		if is_invalid_credentials():
+		if not is_valid_credentials():
 			return redirect(url_for('login', next=request.url))
 		id = decrypt_string(id)
 		if Event.query.get(int(id)):
@@ -181,7 +180,7 @@ class EventView(CustomModelView):
 	
 	@expose('/modify/<id>', methods=('GET', 'POST'))
 	def modify_view(self, id):
-		if is_invalid_credentials():
+		if not is_valid_credentials():
 			return redirect(url_for('login', next=request.url))
 		id = decrypt_string(id)
 		if Event.query.get(int(id)):
