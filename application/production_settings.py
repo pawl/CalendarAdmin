@@ -1,7 +1,6 @@
 import os
-
 from authomatic.providers import oauth2, oauth1
-import authomatic
+from application.auth_providers import EventbriteProvider
 
 # Get application base dir.
 _basedir = os.path.abspath(os.path.dirname(__file__))
@@ -33,5 +32,11 @@ AUTH = {
 		'consumer_key': os.environ['MEETUP_CUSTOMER_KEY'],
 		'consumer_secret': os.environ['MEETUP_CUSTOMER_SECRET'],
 		'id': 2,
+	},
+	'eventbrite': {
+		'class_': EventbriteProvider,
+		'consumer_key': os.environ['EVENTBRITE_CUSTOMER_KEY'],
+		'consumer_secret': os.environ['EVENTBRITE_CUSTOMER_SECRET'],
+		'id': 3,
 	},
 }

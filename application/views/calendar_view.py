@@ -1,8 +1,8 @@
 import urllib
 
 from application.views.custom_model_view import CustomModelView
-from application.models import Calendar, Location, User
-from application.helpers import encrypt_string, credentials
+from application.models import Calendar, Location, User, MeetupGroup
+from application.helpers import encrypt_string, credentials, is_valid_credentials
 from application import app, db, authomatic
 from flask import flash, g
 from flask.ext.admin.actions import action
@@ -18,7 +18,8 @@ class CalendarView(CustomModelView):
 	new_actions = True
 	column_list = ('summary','enabled','url')
 	column_labels = {'summary': 'Calendar Title', 'enabled': 'Calendar Admin Enabled', 'url': 'Public URL for Event Requests', 'locations': 'Approved Event Venues'}
-	form_excluded_columns = ('events', 'enabled', 'calendar_id', 'summary', 'timezone', 'url', 'users')
+	form_columns = ('locations', 'redirect_url')
+	inline_models = [MeetupGroup]
 	
 	# TODO: clean this up
 	column_formatters = dict(url=lambda v, c, m, p: app.config['DOMAIN_NAME']+'/event/request/'+m.url+'/'+urllib.quote_plus(urllib.quote_plus(m.redirect_url)) if (m.redirect_url and m.url) else app.config['DOMAIN_NAME']+'/event/request/'+m.url+'/'+urllib.quote_plus(urllib.quote_plus(app.config['DOMAIN_NAME'])) if (m.url and not m.redirect_url) else "") # show domain name + url if url exists
@@ -58,13 +59,12 @@ class CalendarView(CustomModelView):
 			# if calendar does not exist, then add it
 			if Calendar.query.filter(db.and_(Calendar.calendar_id == calendar['id'], ~Calendar.users.any(User.id == g.user.id))).first():
 				existing_calendar = Calendar.query.filter(Calendar.calendar_id == calendar['id']).one()
-				existing_calendar.users.append(User.query.get(g.user.id))
+				existing_calendar.users.append(g.user)
 				db.session.commit()
 			elif not Calendar.query.filter(db.and_(Calendar.calendar_id == calendar['id'], Calendar.users.any(User.id == g.user.id))).first():
-				new_calendar = Calendar(calendar['id'], calendar['summary'], calendar['timeZone'])
-				new_calendar.users.append(User.query.get(g.user.id))
+				new_calendar = Calendar(calendar['id'], calendar['summary'])
+				new_calendar.users.append(g.user)
 				db.session.add(new_calendar)
-			# if calendar exists and user_id not in list of user ids, then add user_id
 			
 		db.session.commit()
 		return Calendar.query.filter(Calendar.users.any(User.id == g.user.id))

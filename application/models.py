@@ -3,9 +3,11 @@ from application import db
 class User(db.Model):
 	__tablename__ = 'user'
 	id = db.Column(db.Integer, primary_key=True)
-	google_id = db.Column(db.String(256))
-	name = db.Column(db.String(256))
-	email = db.Column(db.String(256))
+	google_id = db.Column(db.String(255)) # should be unique?
+	meetup_id = db.Column(db.String(255))
+	eventbrite_id = db.Column(db.String(255))
+	name = db.Column(db.String(255))
+	email = db.Column(db.String(255))
 		
 	def is_authenticated(self):
 		return True
@@ -27,22 +29,26 @@ users_and_calendars = db.Table('users_and_calendars',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('calendar_id', db.Integer, db.ForeignKey('calendar.id'))
 )
+users_and_meetups = db.Table('users_and_meetups',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+    db.Column('meetup_id', db.Integer, db.ForeignKey('meetup.id'))
+)
 
 class Calendar(db.Model):
 	__tablename__ = 'calendar'
 	id = db.Column(db.Integer, primary_key=True)
-	calendar_id = db.Column(db.String(256)) # string - Identifier of the calendar.
-	summary = db.Column(db.String(256)) # string - Title of the calendar. Read-only.
-	timezone = db.Column(db.String(256)) # string - The time zone of the calendar. Optional. Read-only.
-	url = db.Column(db.String(256))
+	calendar_id = db.Column(db.String(255)) # string - Identifier of the calendar.
+	summary = db.Column(db.String(255)) # string - Title of the calendar. Read-only.
+	timezone = db.Column(db.String(255)) # string - The time zone of the calendar. Optional. Read-only.
+	url = db.Column(db.String(255))
 	enabled = db.Column(db.Boolean())
 	redirect_url = db.Column(db.Text())
+	calendar_type = db.Column(db.String(255)) # google, meetup, eventbrite
 	
 	users = db.relationship('User', secondary=users_and_calendars, backref=db.backref('calendars', lazy='dynamic')) # many-to-many relationship
-		
 	events = db.relationship("Event", backref=db.backref('calendar'))
-	locations = db.relationship("Location", backref=db.backref("calendar"))
-	
+	locations = db.relationship("Location", backref=db.backref('calendar')) # TODO: make this MANY-TO-MANY
+	meetups = db.relationship("MeetupGroup", backref=db.backref('calendar'))
 	def __repr__(self):
 		return self.summary
 		
@@ -50,22 +56,36 @@ class Calendar(db.Model):
 		self.calendar_id = calendar_id
 		self.summary = summary
 		self.timezone = timezone
-		
+
+class MeetupGroup(db.Model):
+	__tablename__ = 'meetup'
+	id = db.Column(db.Integer, primary_key=True)
+	group_id = db.Column(db.Integer)
+	group_urlname = db.Column(db.String(255))
+	group_url = (db.String(255))
+	
+	users = db.relationship('User', secondary=users_and_meetups, backref=db.backref('meetup', lazy='dynamic')) # many-to-many relationship
+	calendar_id = db.Column(db.Integer, db.ForeignKey('calendar.id'))
+	
+	def __repr__(self):
+		return self.group_url
+
 class Event(db.Model):
 	__tablename__ = 'event'
 	id = db.Column(db.Integer, primary_key=True)
-	#event_id = db.Column(db.String(256)) # string - Identifier of the event. Not needed since we're not tracking this.
-	summary = db.Column(db.String(256), nullable=False) # string - Title of the event.
+	#event_id = db.Column(db.String(255)) # string - Identifier of the event. Not needed since we're not tracking this.
+	summary = db.Column(db.String(255), nullable=False) # string - Title of the event.
 	start = db.Column(db.DateTime(), nullable=False) 
 	end = db.Column(db.DateTime(), nullable=False)
 	description = db.Column(db.Text(), nullable=False)
-	#reminders = db.Column(db.String(256))
 	
-	requester_name = db.Column(db.String(256), nullable=False)
-	requester_email = db.Column(db.String(256), nullable=False)
+	requester_name = db.Column(db.String(255), nullable=False)
+	requester_email = db.Column(db.String(255), nullable=False)
 	
+	#ideas - keep events in the database so you can note who approved it and send reminders
+	#archived = db.Column(db.Boolean)
+	#reminders = db.Column(db.String(255))
 	#approved_by = db.Column(db.Integer, db.ForeignKey('user.id'))	
-	#archived
 
 	location_id = db.Column(db.Integer, db.ForeignKey('location.id'), nullable=False)					
 	calendar_id = db.Column(db.Integer, db.ForeignKey('calendar.id'), nullable=False)
@@ -76,11 +96,11 @@ class Event(db.Model):
 class Location(db.Model):
 	__tablename__ = 'location'
 	id = db.Column(db.Integer, primary_key=True)
-	title = db.Column(db.String(256))
-	image_url = db.Column(db.String(256))
+	title = db.Column(db.String(255))
+	image_url = db.Column(db.String(255))
 	description = db.Column(db.Text())
 	
-	calendar_id = db.Column(db.Integer, db.ForeignKey('calendar.id')) 
+	calendar_id = db.Column(db.Integer, db.ForeignKey('calendar.id')) # TODO: make this MANY-TO-MANY to make calendars selectable from Location view
 	events = db.relationship("Event", backref='location')
 	
 	def __repr__(self):

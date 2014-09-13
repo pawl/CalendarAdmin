@@ -38,8 +38,8 @@ class EventView(CustomModelView):
 			raise ValidationError('End time conflicts with another request for the same time.')
 			
 	form_args = dict(
-		end=dict(validators=[required(), end_must_be_greater, end_must_not_conflict], format='%m/%d/%Y %I:%M %p'),
-		start=dict(validators=[required(), start_must_not_conflict, must_be_future],format='%m/%d/%Y %I:%M %p'),
+		end=dict(validators=[required(), end_must_be_greater, end_must_not_conflict]),
+		start=dict(validators=[required(), start_must_not_conflict, must_be_future]),
 		requester_email=dict(validators=[wtforms.validators.Email(message=u'Invalid email address.')])
 	)
 	
