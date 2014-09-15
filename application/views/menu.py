@@ -1,3 +1,4 @@
+from flask import g
 from application.helpers import is_valid_credentials
 from flask.ext.admin.base import MenuLink
 

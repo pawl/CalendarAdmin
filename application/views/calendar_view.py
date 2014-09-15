@@ -1,7 +1,7 @@
 import urllib
 
 from application.views.custom_model_view import CustomModelView
-from application.models import Calendar, Location, User, MeetupGroup
+from application.models import Calendar, Location, User
 from application.helpers import encrypt_string, credentials, is_valid_credentials
 from application import app, db, authomatic
 from flask import flash, g
@@ -18,8 +18,7 @@ class CalendarView(CustomModelView):
 	new_actions = True
 	column_list = ('summary','enabled','url')
 	column_labels = {'summary': 'Calendar Title', 'enabled': 'Calendar Admin Enabled', 'url': 'Public URL for Event Requests', 'locations': 'Approved Event Venues'}
-	form_columns = ('locations', 'redirect_url')
-	inline_models = [MeetupGroup]
+	form_columns = ('locations', 'redirect_url', 'google_disabled', 'meetup_disabled', 'eventbrite_disabled')
 	
 	# TODO: clean this up
 	column_formatters = dict(url=lambda v, c, m, p: app.config['DOMAIN_NAME']+'/event/request/'+m.url+'/'+urllib.quote_plus(urllib.quote_plus(m.redirect_url)) if (m.redirect_url and m.url) else app.config['DOMAIN_NAME']+'/event/request/'+m.url+'/'+urllib.quote_plus(urllib.quote_plus(app.config['DOMAIN_NAME'])) if (m.url and not m.redirect_url) else "") # show domain name + url if url exists

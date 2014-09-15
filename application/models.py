@@ -5,6 +5,7 @@ class User(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	google_id = db.Column(db.String(255)) # should be unique?
 	meetup_id = db.Column(db.String(255))
+	meetup_url = db.Column(db.String(255))
 	eventbrite_id = db.Column(db.String(255))
 	name = db.Column(db.String(255))
 	email = db.Column(db.String(255))
@@ -29,10 +30,6 @@ users_and_calendars = db.Table('users_and_calendars',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('calendar_id', db.Integer, db.ForeignKey('calendar.id'))
 )
-users_and_meetups = db.Table('users_and_meetups',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
-    db.Column('meetup_id', db.Integer, db.ForeignKey('meetup.id'))
-)
 
 class Calendar(db.Model):
 	__tablename__ = 'calendar'
@@ -43,12 +40,14 @@ class Calendar(db.Model):
 	url = db.Column(db.String(255))
 	enabled = db.Column(db.Boolean())
 	redirect_url = db.Column(db.Text())
-	calendar_type = db.Column(db.String(255)) # google, meetup, eventbrite
+	google_disabled = db.Column(db.Boolean())
+	meetup_disabled = db.Column(db.Boolean())
+	eventbrite_disabled = db.Column(db.Boolean())
 	
 	users = db.relationship('User', secondary=users_and_calendars, backref=db.backref('calendars', lazy='dynamic')) # many-to-many relationship
 	events = db.relationship("Event", backref=db.backref('calendar'))
 	locations = db.relationship("Location", backref=db.backref('calendar')) # TODO: make this MANY-TO-MANY
-	meetups = db.relationship("MeetupGroup", backref=db.backref('calendar'))
+
 	def __repr__(self):
 		return self.summary
 		
@@ -56,19 +55,6 @@ class Calendar(db.Model):
 		self.calendar_id = calendar_id
 		self.summary = summary
 		self.timezone = timezone
-
-class MeetupGroup(db.Model):
-	__tablename__ = 'meetup'
-	id = db.Column(db.Integer, primary_key=True)
-	group_id = db.Column(db.Integer)
-	group_urlname = db.Column(db.String(255))
-	group_url = (db.String(255))
-	
-	users = db.relationship('User', secondary=users_and_meetups, backref=db.backref('meetup', lazy='dynamic')) # many-to-many relationship
-	calendar_id = db.Column(db.Integer, db.ForeignKey('calendar.id'))
-	
-	def __repr__(self):
-		return self.group_url
 
 class Event(db.Model):
 	__tablename__ = 'event'
@@ -81,6 +67,10 @@ class Event(db.Model):
 	
 	requester_name = db.Column(db.String(255), nullable=False)
 	requester_email = db.Column(db.String(255), nullable=False)
+	
+	to_google = db.Column(db.Boolean())
+	to_eventbrite = db.Column(db.Boolean())
+	to_meetup = db.Column(db.Boolean())
 	
 	#ideas - keep events in the database so you can note who approved it and send reminders
 	#archived = db.Column(db.Boolean)
