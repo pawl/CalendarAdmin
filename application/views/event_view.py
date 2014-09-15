@@ -5,7 +5,7 @@ import wtforms
 
 from application.views.custom_model_view import CustomModelView
 from wtforms import form, fields, validators
-from wtforms.validators import ValidationError, required
+from wtforms.validators import ValidationError
 from application.models import Calendar, Event, Location, User
 from application.helpers import decrypt_string, is_valid_credentials, credentials, encrypt_string
 from application import app, db, mandrill, authomatic
@@ -38,8 +38,8 @@ class EventView(CustomModelView):
 			raise ValidationError('End time conflicts with another request for the same time.')
 			
 	form_args = dict(
-		end=dict(validators=[required(), end_must_be_greater, end_must_not_conflict]),
-		start=dict(validators=[required(), start_must_not_conflict, must_be_future]),
+		end=dict(validators=[end_must_be_greater, end_must_not_conflict], format='%m/%d/%Y %I:%M %p'), # required validator is not necessary, already included
+		start=dict(validators=[start_must_not_conflict, must_be_future], format='%m/%d/%Y %I:%M %p'),
 		requester_email=dict(validators=[wtforms.validators.Email(message=u'Invalid email address.')])
 	)
 	

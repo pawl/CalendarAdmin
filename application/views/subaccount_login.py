@@ -11,7 +11,7 @@ from application.models import User
 def subaccount_login(provider_name):
 	# user must be logged in via google
 	if g.user and is_valid_credentials(): # better than @login_required decorator - ensures user is logged in and google credentials haven't expired
-		if is_valid_credentials(provider_name): # no need to log in again
+		if is_valid_credentials(name=provider_name): # no need to log in again
 			flash("You were already logged into you " + provider_name + " account.", "success")
 			return redirect(url_for('calendar.index_view'))
 		else:
@@ -20,18 +20,19 @@ def subaccount_login(provider_name):
 				result = authomatic.login(WerkzeugAdapter(request, response), provider_name)
 			# user denies access when asked for permission
 			except FailureError:
-				flash("Permission to access your calendar was denied.")
+				flash("Permission to add events to your " + provider_name + " account was denied.")
 				return redirect('/')
 			except ConfigError:
 				flash("Invalid login option.")
 				return redirect('/')		
 								
 			try:
+				
 				if not (getattr(g.user, provider_name + "_id") and (getattr(g.user, provider_name + "_id") == result.user.id)): # create user if none exists, or if the id is different
+					result.user.update() # user result object won't have any data without this
 					setattr(g.user, provider_name + "_id", result.user.id)
 					db.session.commit()
 					flash("Your " + provider_name + " account was linked successfully", "success")
-				result.user.update() # update the user to get more info
 				session[provider_name] = result.user.credentials.serialize()
 				next = request.args.get('next')
 				if next and is_safe_url(next):

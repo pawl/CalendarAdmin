@@ -1,38 +1,50 @@
 from authomatic.providers.oauth2 import OAuth2
+import authomatic.core as core
 
-# credit to: https://github.com/morgante/nyuadcoursereview/blob/master/app/oauthLogin.py
-class EventbriteProvider(OAuth2):
-	# URL where the user will be redirected and asked to grant permissions to your app.
+class Eventbrite(OAuth2):
+	"""
+    Eventbrite |oauth2| provider.
+    
+    * Dashboard: http://www.eventbrite.com/myaccount/apps/
+    * Docs: http://developer.eventbrite.com/docs/
+    """
+
 	user_authorization_url = 'https://www.eventbrite.com/oauth/authorize'
-	# URL where your app will exchange the request_token for access_token.
 	access_token_url = 'https://www.eventbrite.com/oauth/token'
-	# API endpoint where you can get the user's profile info.
 	user_info_url = 'https://www.eventbriteapi.com/v3/users/me'
-
-	# Optional minimum scope needed to get the user's profile info.
-	user_info_scope = []
 	
-	#The AuthorizationProvider.type_id is a unique numeric ID
-	#assigned to each provider used by serialization and deserialization of credentials. It is automatically generated from the PROVIDER_ID_MAP
-	#Just override the type_id getter with a static property in your subclass with any integer greater than 16
-	type_id = 100017
+	supported_user_attributes = core.SupportedUserAttributes(
+        id=True,
+        email=True,
+        name=True,
+        first_name=True,
+        last_name=True,
+    )
+	
+	type_id = 100017 # prevents AttributeError: 'module' object has no attribute 'PROVIDER_ID_MAP'
+	
+	@classmethod
+	def _x_credentials_parser(cls, credentials, data):
+		credentials.token = data.get('access_token')
+		if data.get('token_type') == 'bearer':
+			credentials.token_type = cls.BEARER # prevents ValueError: u'bearer' is not in list
+		return credentials
 	
 	@staticmethod
 	def _x_user_parser(user, data):
 		"""
 		Use this to populate the User object with data from JSON
 		returned by provider on User.update().
-		
-		http://developer.eventbrite.com/doc/users/
 		"""	  
 		
-		user.user_id = data.get('user_id')
-		user.email = data.get('email')
+		user.id = data.get('id')
+		_emails = data.get('emails', [])
+		for email in _emails:
+			if email.get('type', '') == 'primary':
+				user.email = email.get('address')
+				break
 		user.first_name = data.get('first_name')
 		user.last_name = data.get('last_name')
-		user.user_key = data.get('user_key')
-		user.date_created = data.get('date_created')
-		user.date_modified = data.get('date_modified')
-		user.subusers = data.get('subusers')
+		user.name = data.get('name')
 		
 		return user
