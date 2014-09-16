@@ -19,21 +19,43 @@ def subaccount_login(provider_name):
 			# user denies access when asked for permission
 			except FailureError:
 				flash("Permission to add events to your " + provider_name + " account was denied.")
-				return redirect('/')
+				return redirect(url_for('settings.index'))
 			except ConfigError:
 				flash("Invalid login option.")
-				return redirect('/')
+				return redirect(url_for('settings.index'))
 								
 			try:
 				# if no _id exists or it's different - create user, then refresh credentials
 				if not (getattr(g.user, provider_name + "_id") and (getattr(g.user, provider_name + "_id") == result.user.id)): 
 					result.user.update() # user result object won't have any data without this
 					setattr(g.user, provider_name + "_id", result.user.id)
-					db.session.commit()
-					flash("Your " + provider_name + " account was linked successfully", "success")
-				
+					db.session.commit()					
+					
 				# add newest token to session (refreshes credentials)
 				session[provider_name] = result.user.credentials.serialize()
+				
+				# special logic for grabbing meetup group ID (required for future requests)
+				if (provider_name == "meetup"):
+					try:
+						meetup_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/2/groups?&group_urlname=' + getattr(g.user, "meetup_group_name"), method='GET')
+						g.user.meetup_group_id = meetup_response.data['results'][0]['id']
+						print meetup_response.data['results'][0]['id']
+						db.session.commit()
+					except:
+						g.user.meetup_group_id = None
+						
+					# if it fails to get the ID, unlink meetup account
+					if not g.user.meetup_group_id:
+						g.user.meetup_group_name = None
+						g.user.meetup_group_id = None
+						g.user.meetup_id = None
+						db.session.commit()
+						if session.get("meetup"):
+							del session["meetup"]
+						flash("Failed to find your meetup group. Please attempt to link your Meetup account again with the correct URL.")
+						return redirect(url_for('settings.index'))
+					
+				flash("Your " + provider_name + " account was linked successfully", "success")
 				next = request.args.get('next')
 				if next and is_safe_url(next):
 					return redirect(next)

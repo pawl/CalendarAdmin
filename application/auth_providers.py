@@ -1,25 +1,26 @@
 from authomatic.providers.oauth2 import OAuth2
 import authomatic.core as core
+import os
 
 class Eventbrite(OAuth2):
 	"""
-    Eventbrite |oauth2| provider.
-    
-    * Dashboard: http://www.eventbrite.com/myaccount/apps/
-    * Docs: http://developer.eventbrite.com/docs/
-    """
+	Eventbrite |oauth2| provider.
+	
+	* Dashboard: http://www.eventbrite.com/myaccount/apps/
+	* Docs: http://developer.eventbrite.com/docs/
+	"""
 
 	user_authorization_url = 'https://www.eventbrite.com/oauth/authorize'
 	access_token_url = 'https://www.eventbrite.com/oauth/token'
 	user_info_url = 'https://www.eventbriteapi.com/v3/users/me'
 	
 	supported_user_attributes = core.SupportedUserAttributes(
-        id=True,
-        email=True,
-        name=True,
-        first_name=True,
-        last_name=True,
-    )
+		id=True,
+		email=True,
+		name=True,
+		first_name=True,
+		last_name=True,
+	)
 	
 	type_id = 100017 # prevents AttributeError: 'module' object has no attribute 'PROVIDER_ID_MAP'
 	

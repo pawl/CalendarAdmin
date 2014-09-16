@@ -8,6 +8,9 @@ def subaccount_logout(provider_name):
 	if g.user and is_valid_credentials():
 		if getattr(g.user, provider_name + "_id"): 
 			setattr(g.user, provider_name + "_id", None) # delete user ID
+			if provider_name == "meetup": # special logic for additional meetup attributes
+				g.user.meetup_group_name = None
+				g.user.meetup_group_id = None
 			db.session.commit()
 			flash("Your " + provider_name + " account was unlinked successfully", "success")
 		else:

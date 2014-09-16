@@ -2,6 +2,7 @@ import urllib
 import json
 import datetime
 import wtforms
+import os
 
 from application.views.custom_model_view import CustomModelView
 from wtforms import form, fields, validators
@@ -81,6 +82,7 @@ class EventView(CustomModelView):
 			
 			Link to Modify: %s
 			""" % (event.summary, event.start, event.end, event.description, event.requester_name, event.requester_email, event.location.title, approve_url, deny_url, modify_url)
+			
 			email_addresses = [{'email': user.email} for user in users]
 			mandrill.send_email(
 				from_email="admin@calendaradmin.com",
@@ -108,7 +110,7 @@ class EventView(CustomModelView):
 				start = event_object.start.isoformat() #proper rfc 3339 time format for google calendar api
 				end = event_object.end.isoformat()
 				timezone = event_object.calendar.timezone # without the timezone, you have specify an offset as part of the dateTime
-				requestbody = """{
+				google_requestbody = """{
 				 "start": {
 				  "dateTime": "%s",
 				  "timeZone": "%s"
@@ -123,8 +125,32 @@ class EventView(CustomModelView):
 				}
 				""" % (start, timezone, end, timezone, json.dumps(event_object.description), json.dumps(event_object.location.title), json.dumps(event_object.summary))
 				url = 'https://www.googleapis.com/calendar/v3/calendars/' + urllib.quote(event_object.calendar.calendar_id) + '/events'
-				response = authomatic.access(credentials(), url, method='POST', headers={'Content-Type': 'application/json'}, body=requestbody)
-				if response.status == 200:
+				google_response = authomatic.access(credentials(), url, method='POST', headers={'Content-Type': 'application/json'}, body=google_requestbody)
+				#print "google", google_response
+				
+				meetup_requestbody = {
+					"group_id": g.user.meetup_group_id,
+					"group_urlname": g.user.meetup_group_name,
+					"name": event_object.summary,
+					"duration": (int(event_object.end.strftime("%s")) * 1000) - (int(event_object.start.strftime("%s")) * 1000),
+					"time": (int(event_object.start.strftime("%s")) * 1000),
+					"description": event_object.description
+				}
+				meetup_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/2/event/', meetup_requestbody, method="POST")
+				#print "meetup", meetup_response.data
+				
+				
+				eventbrite_requestbody = {
+					"start_date": event_object.start.strftime("%Y-%m-%d %H:%M:%S"),
+					"end_date": event_object.start.strftime("%Y-%m-%d %H:%M:%S"),
+					"title": event_object.summary,
+					"timezone": timezone,
+					"description": event_object.description
+				}
+				eventbrite_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/event_new', eventbrite_requestbody, method="POST")
+				#print eventbrite_response.data
+				
+				if (google_response.status == 200) and (not eventbrite_response.data.get('error_message')) and (meetup_response.status == 201):
 					# delete item on approval
 					# probably need to save it and add "approved by"
 					Event.query.filter(db.and_(Event.id == event_object.id)).delete(synchronize_session=False)
@@ -148,7 +174,9 @@ class EventView(CustomModelView):
 					)
 					flash('The selected events were approved.')
 				else:
-					flash('There was an error approving your event. Error Code: ' + str(response.status) + ' Reason: ' + response.reason)
+					flash('There was an error approving your event. Error Code: ' + str(google_response.status) + ' Reason: ' + google_response.reason)
+					flash('There was an error approving your event. Error Code: ' + str(eventbrite_response.status) + ' Reason: ' + eventbrite_response.reason)
+					flash('There was an error approving your event. Error Code: ' + str(meetup_response.status) + ' Reason: ' + meetup_response.reason)
 			db.session.commit()
 		except Exception as ex:
 			raise

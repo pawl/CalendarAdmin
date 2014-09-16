@@ -6,6 +6,8 @@ class User(db.Model):
 	google_id = db.Column(db.String(255)) # should be unique?
 	meetup_id = db.Column(db.String(255))
 	meetup_url = db.Column(db.String(255))
+	meetup_group_id = db.Column(db.String(255))
+	meetup_group_name = db.Column(db.String(255))
 	eventbrite_id = db.Column(db.String(255))
 	name = db.Column(db.String(255))
 	email = db.Column(db.String(255))

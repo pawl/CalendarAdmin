@@ -35,15 +35,7 @@ def decrypt_string(value):
 		return False
 		
 def credentials(name='credentials'):
-	try:
-		return authomatic.credentials(session[name])
-	except KeyError:
-		class Credentials(object):
-			pass
-
-		credentials = Credentials()
-		credentials.valid = False
-		return credentials
+	return authomatic.credentials(session[name])
 	
 def is_valid_credentials(name='credentials'):
-	return current_user.is_authenticated() and credentials(name).valid
+	return current_user.is_authenticated() and session.get(name) and credentials(name).valid
