@@ -127,7 +127,10 @@ class EventView(CustomModelView):
 				url = 'https://www.googleapis.com/calendar/v3/calendars/' + urllib.quote(event_object.calendar.calendar_id) + '/events'
 				google_response = authomatic.access(credentials(), url, method='POST', headers={'Content-Type': 'application/json'}, body=google_requestbody)
 				#print "google", google_response
-				
+				if google_response.status != 200:
+					flash('There was an error approving your google calendar event. Error Code: ' + str(google_response.status) + ' Reason: ' + google_response.reason)
+					errors = True
+					
 				meetup_requestbody = {
 					"group_id": g.user.meetup_group_id,
 					"group_urlname": g.user.meetup_group_name,
@@ -138,19 +141,24 @@ class EventView(CustomModelView):
 				}
 				meetup_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/2/event/', meetup_requestbody, method="POST")
 				#print "meetup", meetup_response.data
-				
-				
+				if meetup_response.status != 201:
+					flash('There was an error approving your meetup event. Error Code: ' + str(meetup_response.status) + ' Reason: ' + meetup_response.reason)
+					errors = True
+					
 				eventbrite_requestbody = {
 					"start_date": event_object.start.strftime("%Y-%m-%d %H:%M:%S"),
-					"end_date": event_object.start.strftime("%Y-%m-%d %H:%M:%S"),
+					"end_date": event_object.end.strftime("%Y-%m-%d %H:%M:%S"),
 					"title": event_object.summary,
 					"timezone": timezone,
 					"description": event_object.description
 				}
 				eventbrite_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/event_new', eventbrite_requestbody, method="POST")
 				#print eventbrite_response.data
-				
-				if (google_response.status == 200) and (not eventbrite_response.data.get('error_message')) and (meetup_response.status == 201):
+				if eventbrite_response.data.get('error_message'):
+					flash('There was an error approving your eventbrite event. Error Code: ' + str(eventbrite_response.status) + ' Reason: ' + eventbrite_response.reason)
+					errors = True
+					
+				if not errors:
 					# delete item on approval
 					# probably need to save it and add "approved by"
 					Event.query.filter(db.and_(Event.id == event_object.id)).delete(synchronize_session=False)
@@ -164,7 +172,7 @@ class EventView(CustomModelView):
 					Requester Name: %s
 					Requester E-mail: %s
 					Location: %s
-					""" % (event_object.summary, start, end, event_object.description, event_object.requester_name, event_object.requester_email, event_object.location.title)
+					""" % (event_object.summary, event_object.start.strftime("%Y-%m-%d %H:%M"), event_object.end.strftime("%Y-%m-%d %H:%M"), event_object.description, event_object.requester_name, event_object.requester_email, event_object.location.title)
 					email_addresses = [{'email': user.email} for user in event_object.calendar.users if user.email != g.user.email]
 					mandrill.send_email(
 						from_email="admin@gcalmanager.com",
@@ -173,10 +181,7 @@ class EventView(CustomModelView):
 						text=text.replace('\t','') # remove wacky indentions 
 					)
 					flash('The selected events were approved.')
-				else:
-					flash('There was an error approving your event. Error Code: ' + str(google_response.status) + ' Reason: ' + google_response.reason)
-					flash('There was an error approving your event. Error Code: ' + str(eventbrite_response.status) + ' Reason: ' + eventbrite_response.reason)
-					flash('There was an error approving your event. Error Code: ' + str(meetup_response.status) + ' Reason: ' + meetup_response.reason)
+					
 			db.session.commit()
 		except Exception as ex:
 			raise
