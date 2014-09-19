@@ -73,6 +73,9 @@ class EventView(CustomModelView):
 			Event Description: %s
 			Requester Name: %s
 			Requester E-mail: %s
+			To Google Calendar: %s
+			To Meetup: %s
+			To Eventbrite: %s
 			Location: %s
 					
 			Link to Approve: %s
@@ -80,7 +83,7 @@ class EventView(CustomModelView):
 			Link to Deny: %s
 			
 			Link to Modify: %s
-			""" % (event.summary, event.start, event.end, event.description, event.requester_name, event.requester_email, event.location.title, approve_url, deny_url, modify_url)
+			""" % (event.summary, event.start, event.end, event.description, event.requester_name, event.requester_email, event_object.to_google, event_object.to_meetup, event_object.to_eventbrite, event.location.title, approve_url, deny_url, modify_url)
 			
 			email_addresses = [{'email': user.email} for user in result_calendar.users]
 			mandrill.send_email(
@@ -118,7 +121,8 @@ class EventView(CustomModelView):
 			if not event_object.calendar.eventbrite_disabled and not g.user.eventbrite_id and event_object.calendar.users.any(User.eventbrite_id != None):
 				flash('Other owners of this calendar have a Eventbrite account linked. Please link your Eventbrite account.')
 				return redirect(url_for('settings.index'))
-				
+			
+			#GOOGLE CALENDAR
 			#if not event_object.calendar.google_disabled and event_object.to_google:
 			google_requestbody = """{
 			 "start": {
@@ -140,7 +144,8 @@ class EventView(CustomModelView):
 			if google_response.status != 200:
 				flash('There was an error approving your google calendar event. Error Code: ' + str(google_response.status) + ' Reason: ' + google_response.reason)
 				errors = True
-			"""	
+			
+			# MEETUP
 			if g.user.meetup_id and event_object.to_meetup and not event_object.calendar.meetup_disabled:
 				# create venue if it doesn't exist, otherwise use the returned possible match
 				meetup_venue_requestbody = {
@@ -169,13 +174,15 @@ class EventView(CustomModelView):
 					"duration": (int(event_object.end.strftime("%s")) * 1000) - (int(event_object.start.strftime("%s")) * 1000),
 					"time": (int(event_object.start.strftime("%s")) * 1000),
 					"description": event_object.description,
-					"venue_id": venue_id
+					"venue_id": venue_id,
+					"publish_status": "published"
 				}
 				meetup_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/2/event/', meetup_requestbody, method="POST")
 				if meetup_response.status != 201:
 					flash('There was an error approving your meetup event. Error Code: ' + str(meetup_response.status) + ' Reason: ' + meetup_response.reason)
 					errors = True
-			"""
+			
+			# EVENTBRITE
 			if g.user.eventbrite_id and event_object.to_eventbrite and not event_object.calendar.eventbrite_disabled:				
 				# attempt to create organizer
 				eventbrite_organizer_requestbody = {
@@ -185,9 +192,15 @@ class EventView(CustomModelView):
 				eventbrite_organizer_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/organizer_new', eventbrite_organizer_requestbody, method="POST")
 				
 				if 'error' in eventbrite_organizer_response.data:
+					# search for organizers and pick the first one
 					eventbrite_organizer_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/user_list_organizers', method="GET")
 					try:
-						organizer_id = eventbrite_organizer_response.data['organizers'][0]['organizer']['id']
+						organizer_id = None
+						for organizer in eventbrite_organizer_response.data['organizers']:
+							if organizer['organizer']['name'] == event_object.requester_name:
+								organizer_id = organizer['organizer']['id']
+						if organizer_id == None:
+							organizer_id = eventbrite_organizer_response.data['organizers'][0]['organizer']['id'] # give up, just pick the first one
 					except:
 						flash('There was an retrieving organizers from your eventbrite.')
 						return redirect(url_for('event.index_view'))
@@ -197,55 +210,54 @@ class EventView(CustomModelView):
 					flash('There was an error adding an organizer to your eventbrite.')
 					return redirect(url_for('event.index_view'))
 				
-				eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/user_list_venues', method="GET")
+				# get a list of venues
 				try:
-					venue_id = eventbrite_venue_response.data['venues'][0]['venue']['id']
+					eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/user_list_venues', method="GET")
 				except:
 					flash('There was an retrieving venues from your eventbrite.')
 					return redirect(url_for('event.index_view'))
-				print eventbrite_venue_response.data
-				return redirect(url_for('event.index_view'))					
-					
-				# attempt to create venue
-				eventbrite_venue_requestbody = {
-					"organizer_id": organizer_id,
-					"address": event_object.location.address,
-					"city": event_object.location.city,
-					"name": event_object.location.title,
-					"region": event_object.location.state,
-					"country_code": event_object.location.country
-				}
-				eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/venue_new', eventbrite_venue_requestbody, method="POST")
-				print eventbrite_venue_response.data
-				return redirect(url_for('event.index_view'))
 				
-				if 'error' in eventbrite_venue_response.data:
-					
-				elif 'process' in eventbrite_venue_response.data:
-					venue_id = eventbrite_venue_response.data['process']['id']
-				else:
-					flash('There was an error adding an venue to your eventbrite.')
-					return redirect(url_for('event.index_view'))
+				# try to find a matching venue
+				venue_id = None
+				for venue in eventbrite_venue_response.data['venues']:
+					if event_object.location.title == venue['venue']['name']:
+						venue_id = venue['venue']['id']
+				
+				# create a venue if one isn't found
+				if venue_id is None:
+					# attempt to create venue
+					eventbrite_venue_requestbody = {
+						"organizer_id": organizer_id,
+						"address": event_object.location.address,
+						"city": event_object.location.city,
+						"name": event_object.location.title,
+						"region": event_object.location.state,
+						"country_code": event_object.location.country
+					}
+					eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/venue_new', eventbrite_venue_requestbody, method="POST")						
+					if 'process' in eventbrite_venue_response.data:
+						venue_id = eventbrite_venue_response.data['process']['id']
+					else:
+						flash('There was an error adding an venue to your eventbrite.')
+						return redirect(url_for('event.index_view'))
 				
 				eventbrite_requestbody = {
+					"organizer_id": organizer_id,
+					"venue_id": venue_id,
 					"start_date": event_object.start.strftime("%Y-%m-%d %H:%M:%S"),
 					"end_date": event_object.end.strftime("%Y-%m-%d %H:%M:%S"),
 					"title": event_object.summary,
 					"timezone": timezone,
-					"description": event_object.description
+					"description": event_object.description,
+					"privacy": 1,
+					"status": "live"
 				}
 				eventbrite_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/event_new', eventbrite_requestbody, method="POST")
-				print eventbrite_response.data
 				if eventbrite_response.data.get('error_message'):
 					flash('There was an error approving your eventbrite event. Error Code: ' + str(eventbrite_response.status) + ' Reason: ' + eventbrite_response.reason)
 					errors = True
 				
 			if not errors:
-				# delete item on approval
-				# probably need to save it and add "approved by"
-				Event.query.filter(db.and_(Event.id == event_object.id)).delete(synchronize_session=False)
-				db.session.commit()
-				
 				# email all the other users who could have approved the event
 				text = """The following event has been approved:
 				Event Title: %s
@@ -266,6 +278,12 @@ class EventView(CustomModelView):
 					to=email_addresses,
 					text=text.replace('\t','') # remove wacky indentions 
 				)
+				
+				# delete item on approval
+				# probably need to save it and add "approved by"
+				#Event.query.filter(db.and_(Event.id == event_object.id)).delete(synchronize_session=False)
+				#db.session.commit()
+				
 				flash('The selected events were approved.')
 			else:
 				return redirect(url_for('event.index_view'))
