@@ -42,7 +42,7 @@ class Calendar(db.Model):
 	url = db.Column(db.String(255))
 	enabled = db.Column(db.Boolean())
 	redirect_url = db.Column(db.Text())
-	google_disabled = db.Column(db.Boolean())
+	google_disabled = db.Column(db.Boolean()) # not currently used
 	meetup_disabled = db.Column(db.Boolean())
 	eventbrite_disabled = db.Column(db.Boolean())
 	
@@ -91,6 +91,12 @@ class Location(db.Model):
 	title = db.Column(db.String(255))
 	image_url = db.Column(db.String(255))
 	description = db.Column(db.Text())
+	
+	# for meetup
+	address = db.Column(db.String(255))
+	city = db.Column(db.String(255))
+	country = db.Column(db.String(255))
+	state = db.Column(db.String(255))
 	
 	calendar_id = db.Column(db.Integer, db.ForeignKey('calendar.id')) # TODO: make this MANY-TO-MANY to make calendars selectable from Location view
 	events = db.relationship("Event", backref='location')

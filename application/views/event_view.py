@@ -21,7 +21,7 @@ class EventView(CustomModelView):
 	
 	column_list = ('summary', 'start', 'end', 'location', 'calendar', 'requester_name', 'requester_email')
 	column_labels = {'summary': 'Event Title', 'start': 'Start Time', 'end': 'End Time', 'description': 'Event Description'}
-		
+	
 	def must_be_future(form, field):
 		if form.start.data and (form.start.data < datetime.datetime.now()):
 			raise ValidationError('Start time must be greater than current time.')
@@ -63,7 +63,6 @@ class EventView(CustomModelView):
 			db.session.add(event)
 			db.session.commit()
 
-			users = Calendar.query.filter(Calendar.id == self.calendar_id).one().users
 			approve_url = app.config['DOMAIN_NAME'] + '/event/approve/' + encrypt_string(event.id)
 			deny_url = app.config['DOMAIN_NAME'] + '/event/deny/' + encrypt_string(event.id)
 			modify_url = app.config['DOMAIN_NAME'] + '/event/modify/' + encrypt_string(event.id)
@@ -83,7 +82,7 @@ class EventView(CustomModelView):
 			Link to Modify: %s
 			""" % (event.summary, event.start, event.end, event.description, event.requester_name, event.requester_email, event.location.title, approve_url, deny_url, modify_url)
 			
-			email_addresses = [{'email': user.email} for user in users]
+			email_addresses = [{'email': user.email} for user in result_calendar.users]
 			mandrill.send_email(
 				from_email="admin@calendaradmin.com",
 				subject="New Calendar Admin Request",
@@ -100,51 +99,134 @@ class EventView(CustomModelView):
 		# location information dictionary for form
 		locations = [{'id': location.id, 'image': location.image_url, 'description': location.description} for location in result_calendar.locations] 
 		
-		return self.render('request.html', form=form, locations=locations)
+		return self.render('request.html', form=form, locations=locations, eventbrite_disabled=result_calendar.eventbrite_disabled, google_disabled=result_calendar.google_disabled, meetup_disabled=result_calendar.meetup_disabled)
 		
 	@action('approve', 'Approve')
 	def action_approve(self, ids):
-		try:
-			# TODO make sure user can only approve their own items
-			for event_object in Event.query.filter(db.and_(Event.id.in_(ids))).all():
-				start = event_object.start.isoformat() #proper rfc 3339 time format for google calendar api
-				end = event_object.end.isoformat()
-				timezone = event_object.calendar.timezone # without the timezone, you have specify an offset as part of the dateTime
-				google_requestbody = """{
-				 "start": {
-				  "dateTime": "%s",
-				  "timeZone": "%s"
-				 },
-				 "end": {
-				  "dateTime": "%s",
-				  "timeZone": "%s"
-				 },
-				 "description": %s,
-				 "location": %s,
-				 "summary": %s
+		# TODO make sure user can only approve their own items
+		for event_object in Event.query.filter(db.and_(Event.id.in_(ids))).all():
+			start = event_object.start.isoformat() #proper rfc 3339 time format for google calendar api
+			end = event_object.end.isoformat()
+			timezone = event_object.calendar.timezone # without the timezone, you have specify an offset as part of the dateTime
+			
+			errors = False
+
+			# check to see if other users have meetup/eventbrite linked, if yes - direct the user to settings
+			if not event_object.calendar.meetup_disabled and not g.user.meetup_id and event_object.calendar.users.any(User.meetup_id != None):
+				flash('Other owners of this calendar have a Meetup account linked. Please link your Meetup account.')
+				return redirect(url_for('settings.index'))
+			if not event_object.calendar.eventbrite_disabled and not g.user.eventbrite_id and event_object.calendar.users.any(User.eventbrite_id != None):
+				flash('Other owners of this calendar have a Eventbrite account linked. Please link your Eventbrite account.')
+				return redirect(url_for('settings.index'))
+				
+			#if not event_object.calendar.google_disabled and event_object.to_google:
+			google_requestbody = """{
+			 "start": {
+			  "dateTime": "%s",
+			  "timeZone": "%s"
+			 },
+			 "end": {
+			  "dateTime": "%s",
+			  "timeZone": "%s"
+			 },
+			 "description": %s,
+			 "location": %s,
+			 "summary": %s
+			}
+			""" % (start, timezone, end, timezone, json.dumps(event_object.description), json.dumps(event_object.location.title), json.dumps(event_object.summary))
+			url = 'https://www.googleapis.com/calendar/v3/calendars/' + urllib.quote(event_object.calendar.calendar_id) + '/events'
+			google_response = authomatic.access(credentials(), url, method='POST', headers={'Content-Type': 'application/json'}, body=google_requestbody)
+			#print "google", google_response
+			if google_response.status != 200:
+				flash('There was an error approving your google calendar event. Error Code: ' + str(google_response.status) + ' Reason: ' + google_response.reason)
+				errors = True
+			"""	
+			if g.user.meetup_id and event_object.to_meetup and not event_object.calendar.meetup_disabled:
+				# create venue if it doesn't exist, otherwise use the returned possible match
+				meetup_venue_requestbody = {
+					"address_1": event_object.location.address,
+					"city": event_object.location.city,
+					"name": event_object.location.title,
+					"state": event_object.location.state,
+					"country": event_object.location.country
 				}
-				""" % (start, timezone, end, timezone, json.dumps(event_object.description), json.dumps(event_object.location.title), json.dumps(event_object.summary))
-				url = 'https://www.googleapis.com/calendar/v3/calendars/' + urllib.quote(event_object.calendar.calendar_id) + '/events'
-				google_response = authomatic.access(credentials(), url, method='POST', headers={'Content-Type': 'application/json'}, body=google_requestbody)
-				#print "google", google_response
-				if google_response.status != 200:
-					flash('There was an error approving your google calendar event. Error Code: ' + str(google_response.status) + ' Reason: ' + google_response.reason)
-					errors = True
-					
+				meetup_venue_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/' + g.user.meetup_group_name + '/venues', meetup_venue_requestbody, method="POST")
+				if meetup_venue_response.status == 409:
+					venue_id = meetup_venue_response.data['errors'][0]['potential_matches']['id'] #TODO: make this more accurate and actually get the most similar venue
+				elif meetup_venue_response.status == 400:
+					flash('There was an error adding a venue to your meetup. Error Code: ' + str(meetup_venue_response.status) + ' Reason: ' + meetup_venue_response.data['errors'][0]['code'])
+					return redirect(url_for('event.index_view')) 
+				elif meetup_venue_response.status == 201:
+					venue_id = meetup_venue_response.data['id']
+				else:
+					flash('There was an error adding a venue to your meetup. Error Code: ' + str(meetup_venue_response.status))
+					return redirect(url_for('event.index_view')) 
+				
 				meetup_requestbody = {
 					"group_id": g.user.meetup_group_id,
 					"group_urlname": g.user.meetup_group_name,
 					"name": event_object.summary,
 					"duration": (int(event_object.end.strftime("%s")) * 1000) - (int(event_object.start.strftime("%s")) * 1000),
 					"time": (int(event_object.start.strftime("%s")) * 1000),
-					"description": event_object.description
+					"description": event_object.description,
+					"venue_id": venue_id
 				}
 				meetup_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/2/event/', meetup_requestbody, method="POST")
-				#print "meetup", meetup_response.data
 				if meetup_response.status != 201:
 					flash('There was an error approving your meetup event. Error Code: ' + str(meetup_response.status) + ' Reason: ' + meetup_response.reason)
 					errors = True
+			"""
+			if g.user.eventbrite_id and event_object.to_eventbrite and not event_object.calendar.eventbrite_disabled:				
+				# attempt to create organizer
+				eventbrite_organizer_requestbody = {
+					"name": event_object.requester_name,
+					"description": ""
+				}
+				eventbrite_organizer_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/organizer_new', eventbrite_organizer_requestbody, method="POST")
+				
+				if 'error' in eventbrite_organizer_response.data:
+					eventbrite_organizer_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/user_list_organizers', method="GET")
+					try:
+						organizer_id = eventbrite_organizer_response.data['organizers'][0]['organizer']['id']
+					except:
+						flash('There was an retrieving organizers from your eventbrite.')
+						return redirect(url_for('event.index_view'))
+				elif 'process' in eventbrite_organizer_response.data:
+					organizer_id = eventbrite_organizer_response.data['process']['id']
+				else:
+					flash('There was an error adding an organizer to your eventbrite.')
+					return redirect(url_for('event.index_view'))
+				
+				eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/user_list_venues', method="GET")
+				try:
+					venue_id = eventbrite_venue_response.data['venues'][0]['venue']['id']
+				except:
+					flash('There was an retrieving venues from your eventbrite.')
+					return redirect(url_for('event.index_view'))
+				print eventbrite_venue_response.data
+				return redirect(url_for('event.index_view'))					
 					
+				# attempt to create venue
+				eventbrite_venue_requestbody = {
+					"organizer_id": organizer_id,
+					"address": event_object.location.address,
+					"city": event_object.location.city,
+					"name": event_object.location.title,
+					"region": event_object.location.state,
+					"country_code": event_object.location.country
+				}
+				eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/venue_new', eventbrite_venue_requestbody, method="POST")
+				print eventbrite_venue_response.data
+				return redirect(url_for('event.index_view'))
+				
+				if 'error' in eventbrite_venue_response.data:
+					
+				elif 'process' in eventbrite_venue_response.data:
+					venue_id = eventbrite_venue_response.data['process']['id']
+				else:
+					flash('There was an error adding an venue to your eventbrite.')
+					return redirect(url_for('event.index_view'))
+				
 				eventbrite_requestbody = {
 					"start_date": event_object.start.strftime("%Y-%m-%d %H:%M:%S"),
 					"end_date": event_object.end.strftime("%Y-%m-%d %H:%M:%S"),
@@ -153,40 +235,41 @@ class EventView(CustomModelView):
 					"description": event_object.description
 				}
 				eventbrite_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/event_new', eventbrite_requestbody, method="POST")
-				#print eventbrite_response.data
+				print eventbrite_response.data
 				if eventbrite_response.data.get('error_message'):
 					flash('There was an error approving your eventbrite event. Error Code: ' + str(eventbrite_response.status) + ' Reason: ' + eventbrite_response.reason)
 					errors = True
-					
-				if not errors:
-					# delete item on approval
-					# probably need to save it and add "approved by"
-					Event.query.filter(db.and_(Event.id == event_object.id)).delete(synchronize_session=False)
-					
-					# email all the other users who could have approved the event
-					text = """The following event has been approved:
-					Event Title: %s
-					Start Time: %s
-					End Time: %s
-					Event Description: %s
-					Requester Name: %s
-					Requester E-mail: %s
-					Location: %s
-					""" % (event_object.summary, event_object.start.strftime("%Y-%m-%d %H:%M"), event_object.end.strftime("%Y-%m-%d %H:%M"), event_object.description, event_object.requester_name, event_object.requester_email, event_object.location.title)
-					email_addresses = [{'email': user.email} for user in event_object.calendar.users if user.email != g.user.email]
-					mandrill.send_email(
-						from_email="admin@gcalmanager.com",
-						subject="Calendar Admin Request Approved",
-						to=email_addresses,
-						text=text.replace('\t','') # remove wacky indentions 
-					)
-					flash('The selected events were approved.')
-					
-			db.session.commit()
-		except Exception as ex:
-			raise
-			#flash(gettext('Failed to add events to your Google Calendar. %(error)s', error=str(ex)), 'error')
-			
+				
+			if not errors:
+				# delete item on approval
+				# probably need to save it and add "approved by"
+				Event.query.filter(db.and_(Event.id == event_object.id)).delete(synchronize_session=False)
+				db.session.commit()
+				
+				# email all the other users who could have approved the event
+				text = """The following event has been approved:
+				Event Title: %s
+				Start Time: %s
+				End Time: %s
+				Event Description: %s
+				Requester Name: %s
+				Requester E-mail: %s
+				To Google Calendar: %s
+				To Meetup: %s
+				To Eventbrite: %s
+				Location: %s
+				""" % (event_object.summary, event_object.start.strftime("%Y-%m-%d %H:%M"), event_object.end.strftime("%Y-%m-%d %H:%M"), event_object.description, event_object.requester_name, event_object.requester_email, event_object.to_google, event_object.to_meetup, event_object.to_eventbrite, event_object.location.title)
+				email_addresses = [{'email': user.email} for user in event_object.calendar.users if user.email != g.user.email]
+				mandrill.send_email(
+					from_email="admin@gcalmanager.com",
+					subject="Calendar Admin Request Approved",
+					to=email_addresses,
+					text=text.replace('\t','') # remove wacky indentions 
+				)
+				flash('The selected events were approved.')
+			else:
+				return redirect(url_for('event.index_view'))
+
 	# TODO: ensure approve and deny links are always different, so users can't click links in old emails to deny other's requests
 	@expose('/approve/<id>', methods=('GET', 'POST'))
 	def approve_view(self, id):

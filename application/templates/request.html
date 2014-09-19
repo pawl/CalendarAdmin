@@ -112,6 +112,30 @@
 								{% endif %}
 							</div>
 						</div>
+						
+						{% if not (google_disabled and meetup_disabled and eventbrite_disabled) %}
+						<div class="form-group">
+							<label for="location" class="col-lg-3 control-label">Calendars</label>
+							<div class="col-lg-9">
+								{% if not google_disabled %}
+								<label class="checkbox-inline">
+								  <input id="to_google" name="to_google" type="checkbox" value="y" checked="checked" disabled> Google Calendar
+								</label>
+								{% endif %}
+								{% if not meetup_disabled %}
+								<label class="checkbox-inline">
+								  <input id="to_meetup" name="to_meetup" type="checkbox" value="y" checked="checked"> Meetup
+								</label>
+								{% endif %}
+								{% if not eventbrite_disabled %}
+								<label class="checkbox-inline">
+								  <input id="to_eventbrite" name="to_eventbrite" type="checkbox" value="y" checked="checked"> Eventbrite
+								</label>
+								{% endif %}
+							</div>
+						</div>
+						{% endif %}
+						
 						<div class="form-group">
 							<label for="location" class="col-lg-3 control-label">Event Location</label>
 							<div class="col-lg-9">
