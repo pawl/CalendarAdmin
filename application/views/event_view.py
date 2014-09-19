@@ -83,7 +83,7 @@ class EventView(CustomModelView):
 			Link to Deny: %s
 			
 			Link to Modify: %s
-			""" % (event.summary, event.start, event.end, event.description, event.requester_name, event.requester_email, event_object.to_google, event_object.to_meetup, event_object.to_eventbrite, event.location.title, approve_url, deny_url, modify_url)
+			""" % (event.summary, event.start, event.end, event.description, event.requester_name, event.requester_email, event.to_google, event.to_meetup, event.to_eventbrite, event.location.title, approve_url, deny_url, modify_url)
 			
 			email_addresses = [{'email': user.email} for user in result_calendar.users]
 			mandrill.send_email(
