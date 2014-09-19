@@ -281,8 +281,8 @@ class EventView(CustomModelView):
 				
 				# delete item on approval
 				# probably need to save it and add "approved by"
-				#Event.query.filter(db.and_(Event.id == event_object.id)).delete(synchronize_session=False)
-				#db.session.commit()
+				Event.query.filter(db.and_(Event.id == event_object.id)).delete(synchronize_session=False)
+				db.session.commit()
 				
 				flash('The selected events were approved.')
 			else:
