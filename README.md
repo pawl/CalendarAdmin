@@ -1,9 +1,9 @@
 Calendar Admin
 ---
 
-Calendar Admin adds the ability to send requests to the administrators of your Google Calendar to have events added. 
+Calendar Admin adds the ability to send requests to the administrators to have events added to the organization's Google Calendar, Meetup.com, and Eventbrite. 
 
-It allows you to generate a link to use for an "Add Event" button above your calendar, so your users can request to have events added to your calendar.
+It allows you to generate a link to use for an "Add Event" button above your calendar, so your users can request to have events added to your calendars.
 
 ![Alt text](https://github.com/pawl/CalendarAdmin/blob/master/screenshots/add_event.png "Add Event Button")
 
@@ -18,7 +18,7 @@ Requests are approved or denied by calendar administrators via e-mail or the web
 * Uses Python's Flask Web Framework with the Flask-Admin extension.
 * Project is designed to be deployed on Heroku, but can be run locally (preferrably an Ubuntu/Debian server) by using "fab run".
 * Uses SQLAlchemy (Flask-SQLAlchemy) as the ORM. Locally it uses SQLite, on Heroku it uses Postgres.
-* OAUTH authentication made easier by Authomatic.
+* OAUTH authentication with google calendar, meetup, and eventbrite made easier by Authomatic.
 * Used https://github.com/albertogg/flask-bootstrap-skel for initial boilerplate.
 * Admin interface is using the SB Admin 2 theme: http://startbootstrap.com/template-overviews/sb-admin-2/
 * Email is handled using Mandrill.
@@ -69,8 +69,6 @@ IMGUR_ID='aaaaaaaaaaaaaaa'
 * https://github.com/albertogg/flask-bootstrap-skel#production-configuration
 
 ### TODO
-* Add meetup support.
-* Add eventbrite support.
 * Improve styling on front page.
 * Improve styling on requests page.
 * Write unit test for requesting an event.
