@@ -10,7 +10,7 @@ def subaccount_login(provider_name):
 	# user must be logged in via google
 	if g.user and is_valid_credentials(): # better than @login_required decorator - ensures user is logged in and google credentials haven't expired
 		if is_valid_credentials(name=provider_name): # no need to log in again
-			flash("You were already logged into you " + provider_name + " account.", "success")
+			flash("You were already logged into your " + provider_name + " account.", "success")
 			return redirect(url_for('calendar.index_view'))
 		else:
 			response = make_response()
@@ -39,7 +39,6 @@ def subaccount_login(provider_name):
 					try:
 						meetup_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/2/groups?&group_urlname=' + getattr(g.user, "meetup_group_name"), method='GET')
 						g.user.meetup_group_id = meetup_response.data['results'][0]['id']
-						print meetup_response.data['results'][0]['id']
 						db.session.commit()
 					except:
 						g.user.meetup_group_id = None

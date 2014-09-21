@@ -47,7 +47,6 @@ class ImgurImageField(ImageUploadField):
 				'image': b64encode(contents),
 			}
 		)
-		print request.content
 		return request.json()['data']['id']
 			
 class LocationView(CustomModelView):
