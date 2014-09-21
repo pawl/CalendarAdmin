@@ -74,7 +74,6 @@ class EventView(CustomModelView):
 			Event Description: %s
 			Requester Name: %s
 			Requester E-mail: %s
-			To Google Calendar: %s
 			To Meetup: %s
 			To Eventbrite: %s
 			Location: %s
@@ -84,7 +83,7 @@ class EventView(CustomModelView):
 			Link to Deny: %s
 			
 			Link to Modify: %s
-			""" % (event.summary, event.start, event.end, event.description, event.requester_name, event.requester_email, event.to_google, event.to_meetup, event.to_eventbrite, event.location.title, approve_url, deny_url, modify_url)
+			""" % (event.summary, event.start, event.end, event.description, event.requester_name, event.requester_email, event.to_meetup, event.to_eventbrite, event.location.title, approve_url, deny_url, modify_url)
 			
 			email_addresses = [{'email': user.email} for user in result_calendar.users]
 			mandrill.send_email(
@@ -267,11 +266,10 @@ class EventView(CustomModelView):
 				Event Description: %s
 				Requester Name: %s
 				Requester E-mail: %s
-				To Google Calendar: %s
 				To Meetup: %s
 				To Eventbrite: %s
 				Location: %s
-				""" % (event_object.summary, event_object.start.strftime("%Y-%m-%d %H:%M"), event_object.end.strftime("%Y-%m-%d %H:%M"), event_object.description, event_object.requester_name, event_object.requester_email, event_object.to_google, event_object.to_meetup, event_object.to_eventbrite, event_object.location.title)
+				""" % (event_object.summary, event_object.start.strftime("%Y-%m-%d %H:%M"), event_object.end.strftime("%Y-%m-%d %H:%M"), event_object.description, event_object.requester_name, event_object.requester_email, event_object.to_meetup, event_object.to_eventbrite, event_object.location.title)
 				email_addresses = [{'email': user.email} for user in event_object.calendar.users if user.email != g.user.email]
 				mandrill.send_email(
 					from_email="admin@gcalmanager.com",
