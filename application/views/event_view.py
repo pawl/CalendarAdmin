@@ -21,6 +21,7 @@ class EventView(CustomModelView):
 	
 	column_list = ('summary', 'start', 'end', 'location', 'calendar', 'requester_name', 'requester_email')
 	column_labels = {'summary': 'Event Title', 'start': 'Start Time', 'end': 'End Time', 'description': 'Event Description'}
+	form_columns = ('summary','start', 'end','description', 'requester_name', 'requester_email', 'to_meetup', 'to_eventbrite', 'location', 'calendar')
 	
 	def must_be_future(form, field):
 		if form.start.data and (form.start.data < datetime.datetime.now()):
@@ -115,10 +116,10 @@ class EventView(CustomModelView):
 			errors = False
 
 			# check to see if other users have meetup/eventbrite linked, if yes - direct the user to settings
-			if not event_object.calendar.meetup_disabled and not g.user.meetup_id and event_object.calendar.users.any(User.meetup_id != None):
+			if not event_object.calendar.meetup_disabled and not g.user.meetup_id and any([(user.meetup_id and g.user.id != user.id) for user in event_object.calendar.users]):
 				flash('Other owners of this calendar have a Meetup account linked. Please link your Meetup account.')
 				return redirect(url_for('settings.index'))
-			if not event_object.calendar.eventbrite_disabled and not g.user.eventbrite_id and event_object.calendar.users.any(User.eventbrite_id != None):
+			if not event_object.calendar.eventbrite_disabled and not g.user.eventbrite_id and any([(user.eventbrite_id and g.user.id != user.id) for user in event_object.calendar.users]):
 				flash('Other owners of this calendar have a Eventbrite account linked. Please link your Eventbrite account.')
 				return redirect(url_for('settings.index'))
 			
