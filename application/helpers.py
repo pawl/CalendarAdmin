@@ -35,7 +35,8 @@ def decrypt_string(value):
 		return False
 		
 def credentials(name='credentials'):
-	return authomatic.credentials(session[name])
+	# if you're getting keyerrors here, you need to check is_valid_credentials and redirect to login with next=request.url
+	return authomatic.credentials(session[name]) 
 	
 def is_valid_credentials(name='credentials'):
 	return current_user.is_authenticated() and session.get(name) and credentials(name).valid

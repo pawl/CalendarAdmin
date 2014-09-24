@@ -30,7 +30,7 @@ def login():
 		flash("Permission to access your calendar was denied.")
 		return redirect('/')
 	
-	try:	
+	if result:	
 		result.user.update() # update the user to get more info
 		try:
 			user = User.query.filter(User.google_id == str(result.user.id)).one()
@@ -42,5 +42,5 @@ def login():
 		login_user(user)
 		flash("You were logged in successfully.", "success")
 		return redirect(session.pop('next', False) or '/') # clear the session variable to prevent always going to the same page
-	except AttributeError:	
-		return response	
+	else:	
+		return response	# redirect user to login at google's site
