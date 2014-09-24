@@ -3,6 +3,7 @@ import json
 import datetime
 import wtforms
 import os
+import arrow
 
 from application.views.custom_model_view import CustomModelView
 from wtforms import form, fields, validators
@@ -157,7 +158,7 @@ class EventView(CustomModelView):
 				if g.user.meetup_id and event_object.to_meetup and not event_object.calendar.meetup_disabled:
 					if not is_valid_credentials(name="meetup"):
 						return redirect(url_for('subaccount_login', provider_name="meetup", next=request.url))
-						
+					
 					# create venue if it doesn't exist, otherwise use the returned possible match
 					meetup_venue_requestbody = {
 						"address_1": event_object.location.address,
@@ -178,12 +179,18 @@ class EventView(CustomModelView):
 						flash('There was an error adding a venue to your meetup. Error Code: ' + str(meetup_venue_response.status))
 						return redirect(url_for('event.index_view')) 
 					
+					meetup_start = arrow.get(event_object.start, event_object.calendar.timezone)
+					meetup_start = (meetup_start-meetup_start.dst()).to('utc').timestamp # adjust for dst and return timestamp
+					
+					meetup_end = arrow.get(event_object.end, event_object.calendar.timezone)
+					meetup_end = (meetup_end-meetup_end.dst()).to('utc').timestamp 
+					
 					meetup_requestbody = {
 						"group_id": g.user.meetup_group_id,
 						"group_urlname": g.user.meetup_group_name,
 						"name": event_object.summary,
-						"duration": (int(event_object.end.strftime("%s")) * 1000) - (int(event_object.start.strftime("%s")) * 1000),
-						"time": (int(event_object.start.strftime("%s")) * 1000),
+						"duration": (meetup_end*1000) - (meetup_start*1000),
+						"time": meetup_start*1000,
 						"description": event_object.description,
 						"venue_id": venue_id,
 						"publish_status": "published"
