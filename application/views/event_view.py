@@ -154,9 +154,9 @@ class EventView(CustomModelView):
 					errors = True
 				
 				# MEETUP
-				if not is_valid_credentials(name="meetup"):
-					return redirect(url_for('subaccount_login', provider_name="meetup", next=request.url))
 				if g.user.meetup_id and event_object.to_meetup and not event_object.calendar.meetup_disabled:
+					if not is_valid_credentials(name="meetup"):
+						return redirect(url_for('subaccount_login', provider_name="meetup", next=request.url))
 					# create venue if it doesn't exist, otherwise use the returned possible match
 					meetup_venue_requestbody = {
 						"address_1": event_object.location.address,
@@ -193,9 +193,9 @@ class EventView(CustomModelView):
 						errors = True
 				
 				# EVENTBRITE
-				if not is_valid_credentials(name="eventbrite"):
-					return redirect(url_for('subaccount_login', provider_name="eventbrite", next=request.url))
-				if g.user.eventbrite_id and event_object.to_eventbrite and not event_object.calendar.eventbrite_disabled:				
+				if g.user.eventbrite_id and event_object.to_eventbrite and not event_object.calendar.eventbrite_disabled:
+					if not is_valid_credentials(name="eventbrite"):
+						return redirect(url_for('subaccount_login', provider_name="eventbrite", next=request.url))
 					# attempt to create organizer
 					eventbrite_organizer_requestbody = {
 						"name": event_object.requester_name,
@@ -297,10 +297,10 @@ class EventView(CustomModelView):
 					
 					flash('The selected events were approved.')
 					
-				if request.endpoint == "event.approve_view" and not errors:
-					return '<b>Event successfully approved.</b>'
-				elif request.endpoint == "event.approve_view":
+				if request.endpoint == "event.approve_view" and errors:
 					return '<b>Event approval failed: ' + ", ".join(get_flashed_messages()) + '</b>'
+				elif request.endpoint == "event.approve_view":
+					return '<b>Event successfully approved.</b>'
 				else:
 					return redirect(url_for('event.index_view'))
 			else:
