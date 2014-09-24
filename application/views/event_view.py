@@ -157,6 +157,7 @@ class EventView(CustomModelView):
 				if g.user.meetup_id and event_object.to_meetup and not event_object.calendar.meetup_disabled:
 					if not is_valid_credentials(name="meetup"):
 						return redirect(url_for('subaccount_login', provider_name="meetup", next=request.url))
+						
 					# create venue if it doesn't exist, otherwise use the returned possible match
 					meetup_venue_requestbody = {
 						"address_1": event_object.location.address,
@@ -196,6 +197,7 @@ class EventView(CustomModelView):
 				if g.user.eventbrite_id and event_object.to_eventbrite and not event_object.calendar.eventbrite_disabled:
 					if not is_valid_credentials(name="eventbrite"):
 						return redirect(url_for('subaccount_login', provider_name="eventbrite", next=request.url))
+						
 					# attempt to create organizer
 					eventbrite_organizer_requestbody = {
 						"name": event_object.requester_name,
