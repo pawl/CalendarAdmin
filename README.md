@@ -76,3 +76,4 @@ IMGUR_ID='aaaaaaaaaaaaaaa'
 * Make the admin interface more user friendly by adding a more obvious button to create public urls for calendars.
 * Only meetup/eventbrite: Prevent collisions of events for the same location and same time.
 * Fix date fields on "Create Event" page. They can't share the same formatting as the request form without some changes to flask-admin. 
+* Override get_count_query() in all the ModelViews that have get_query() overridden.
