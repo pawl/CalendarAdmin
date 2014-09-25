@@ -182,8 +182,8 @@ class EventView(CustomModelView):
 					# try to find a matching venue
 					meetup_venue_id = None
 					for venue in meetup_venue_response.data['results']:
-						if (event_object.location.title == venue['name']) or (event_object.location.address == venue['address_1']):
-							meetup_venue_id = venue['id'] # TODO: Only do this after attempting to create the venue
+						if (event_object.location.title == venue['name']): #or (event_object.location.address == venue['address_1']):
+							meetup_venue_id = venue['id']
 					
 					if meetup_venue_id is None:
 						# create venue if it doesn't exist, otherwise use the returned possible match
