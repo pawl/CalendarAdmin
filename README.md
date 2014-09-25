@@ -74,5 +74,5 @@ IMGUR_ID='aaaaaaaaaaaaaaa'
 * Write unit test for requesting an event.
 * Allow scheduling repeating classes (need to be careful not to let classes run indefinitely).
 * Make the admin interface more user friendly by adding a more obvious button to create public urls for calendars.
-* Prevent collisions of events for the same location and same time.
+* Only meetup/eventbrite: Prevent collisions of events for the same location and same time.
 * Fix date fields on "Create Event" page. They can't share the same formatting as the request form without some changes to flask-admin. 

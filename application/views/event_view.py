@@ -115,10 +115,6 @@ class EventView(CustomModelView):
 		for id in ids:
 			event_object = Event.query.get(int(id))
 			if event_object:
-				start = event_object.start.isoformat() #proper rfc 3339 time format for google calendar api
-				end = event_object.end.isoformat()
-				timezone = event_object.calendar.timezone # without the timezone, you have specify an offset as part of the dateTime
-				
 				errors = False
 
 				# check to see if other users have meetup/eventbrite linked, if yes - direct the user to settings
@@ -129,37 +125,56 @@ class EventView(CustomModelView):
 					flash('Other owners of this calendar have a Eventbrite account linked. Please link your Eventbrite account.')
 					return redirect(url_for('settings.index'))
 				
-				#GOOGLE CALENDAR
+				###########################
+				# GOOGLE CALENDAR
+				###########################
+				#if not event_object.calendar.google_disabled and event_object.to_google: # for when Google Calendar can be disabled
+				
 				if not is_valid_credentials():
 					return redirect(url_for('login', next=request.url))
-				#if not event_object.calendar.google_disabled and event_object.to_google:
-				google_requestbody = """{
-				 "start": {
-				  "dateTime": "%s",
-				  "timeZone": "%s"
-				 },
-				 "end": {
-				  "dateTime": "%s",
-				  "timeZone": "%s"
-				 },
-				 "description": %s,
-				 "location": %s,
-				 "summary": %s
-				}
-				""" % (start, timezone, end, timezone, json.dumps(event_object.description), json.dumps(event_object.location.title), json.dumps(event_object.summary))
-				url = 'https://www.googleapis.com/calendar/v3/calendars/' + urllib.quote(event_object.calendar.calendar_id) + '/events'
-				google_response = authomatic.access(credentials(), url, method='POST', headers={'Content-Type': 'application/json'}, body=google_requestbody)
-				#print "google", google_response
-				if google_response.status != 200:
-					flash('There was an error approving your google calendar event. Error Code: ' + str(google_response.status) + ' Reason: ' + google_response.reason)
-					errors = True
 				
+				# +'Z' is short-hand for GMT timezone
+				google_find_duplicate_params = {
+					"timeMin": event_object.start.isoformat()+'Z',
+					"timeMax": event_object.end.isoformat()+'Z',
+					"timeZone": event_object.calendar.timezone
+				}
+				google_find_duplicates_response = authomatic.access(credentials(), 'https://www.googleapis.com/calendar/v3/calendars/' + urllib.quote(event_object.calendar.calendar_id) + '/events', params=google_find_duplicate_params)
+				existing_events = [event for event in google_find_duplicates_response.data['items'] if (event_object.location.title == event['location']) or (event_object.summary == event['summary'])]
+				
+				if not any(existing_events):
+					google_add_event_requestbody = {
+						"start": {
+							"dateTime": event_object.start.isoformat(),
+							"timeZone": event_object.calendar.timezone
+						},
+						"end": {
+							"dateTime": event_object.end.isoformat(),
+							"timeZone": event_object.calendar.timezone
+						},
+						"description": event_object.description,
+						"location": event_object.location.title,
+						"summary": event_object.summary
+					}
+					url = 'https://www.googleapis.com/calendar/v3/calendars/' + urllib.quote(event_object.calendar.calendar_id) + '/events'
+					google_add_event_response = authomatic.access(credentials(), url, method='POST', headers={'Content-Type': 'application/json'}, body=json.dumps(google_add_event_requestbody))
+					#print "google", google_response
+					if google_add_event_response.status != 200:
+						flash('There was an error approving your google calendar event. Error Code: ' + str(google_add_event_response.status) + ' Reason: ' + google_add_event_response.reason)
+						errors = True
+				else:
+					flash('A similar event already exists in your google calendar.')
+					
+				
+				##############
 				# MEETUP
+				##############
 				if g.user.meetup_id and event_object.to_meetup and not event_object.calendar.meetup_disabled:
 					if not is_valid_credentials(name="meetup"):
 						return redirect(url_for('subaccount_login', provider_name="meetup", next=request.url))
 					
 					# create venue if it doesn't exist, otherwise use the returned possible match
+					# somehow this is passed to authomatic as a param and it's escaped, no json + json header required
 					meetup_venue_requestbody = {
 						"address_1": event_object.location.address,
 						"city": event_object.location.city,
@@ -169,38 +184,44 @@ class EventView(CustomModelView):
 					}
 					meetup_venue_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/' + g.user.meetup_group_name + '/venues', meetup_venue_requestbody, method="POST")
 					if meetup_venue_response.status == 409:
-						venue_id = meetup_venue_response.data['errors'][0]['potential_matches']['id'] #TODO: make this more accurate and actually get the most similar venue
+						venue_id = meetup_venue_response.data['errors'][0]['potential_matches'][0]['id'] #TODO: make this more accurate and actually get the most similar venue
 					elif meetup_venue_response.status == 400:
-						flash('There was an error adding a venue to your meetup. Error Code: ' + str(meetup_venue_response.status) + ' Reason: ' + meetup_venue_response.data['errors'][0]['code'])
-						return redirect(url_for('event.index_view')) 
+						reasons = ", ".join([error['code'] for error in meetup_venue_response.data['errors']])
+						flash('There was an error adding a venue to your meetup. Error Code: ' + str(meetup_venue_response.status) + ' Reason: ' + reasons)
+						if "address_1_error" in reasons:
+							flash("Try adding a zip-code to your venue's address.")
+						errors = True
 					elif meetup_venue_response.status == 201:
 						venue_id = meetup_venue_response.data['id']
-					else:
+					else: # error status without reasons, could be 404
 						flash('There was an error adding a venue to your meetup. Error Code: ' + str(meetup_venue_response.status))
-						return redirect(url_for('event.index_view')) 
-					
-					meetup_start = arrow.get(event_object.start, event_object.calendar.timezone)
-					meetup_start = (meetup_start-meetup_start.dst()).to('utc').timestamp # adjust for dst and return timestamp
-					
-					meetup_end = arrow.get(event_object.end, event_object.calendar.timezone)
-					meetup_end = (meetup_end-meetup_end.dst()).to('utc').timestamp 
-					
-					meetup_requestbody = {
-						"group_id": g.user.meetup_group_id,
-						"group_urlname": g.user.meetup_group_name,
-						"name": event_object.summary,
-						"duration": (meetup_end*1000) - (meetup_start*1000),
-						"time": meetup_start*1000,
-						"description": event_object.description,
-						"venue_id": venue_id,
-						"publish_status": "published"
-					}
-					meetup_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/2/event/', meetup_requestbody, method="POST")
-					if meetup_response.status != 201:
-						flash('There was an error approving your meetup event. Error Code: ' + str(meetup_response.status) + ' Reason: ' + meetup_response.reason)
 						errors = True
+					
+					if venue_id:
+						meetup_start = arrow.get(event_object.start, event_object.calendar.timezone)
+						meetup_start = (meetup_start-meetup_start.dst()).to('utc').timestamp # adjust for dst and return timestamp
+						
+						meetup_end = arrow.get(event_object.end, event_object.calendar.timezone)
+						meetup_end = (meetup_end-meetup_end.dst()).to('utc').timestamp 
+						
+						meetup_requestbody = {
+							"group_id": g.user.meetup_group_id,
+							"group_urlname": g.user.meetup_group_name,
+							"name": event_object.summary,
+							"duration": (meetup_end*1000) - (meetup_start*1000),
+							"time": meetup_start*1000,
+							"description": event_object.description,
+							"venue_id": venue_id,
+							"publish_status": "published"
+						}
+						meetup_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/2/event.json/', meetup_requestbody, method="POST")
+						if meetup_response.status != 201:
+							flash('There was an error approving your meetup event. Error Code: ' + str(meetup_response.status) + ' Reason: ' + meetup_response.reason)
+							errors = True
 				
+				#######################
 				# EVENTBRITE
+				#######################
 				if g.user.eventbrite_id and event_object.to_eventbrite and not event_object.calendar.eventbrite_disabled:
 					if not is_valid_credentials(name="eventbrite"):
 						return redirect(url_for('subaccount_login', provider_name="eventbrite", next=request.url))
@@ -211,10 +232,10 @@ class EventView(CustomModelView):
 						"description": ""
 					}
 					eventbrite_organizer_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/organizer_new', eventbrite_organizer_requestbody, method="POST")
-					
+					print eventbrite_organizer_response.data
 					if 'error' in eventbrite_organizer_response.data:
 						# search for organizers and pick the first one
-						eventbrite_organizer_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/user_list_organizers', method="GET")
+						eventbrite_organizer_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/user_list_organizers')
 						try:
 							organizer_id = None
 							for organizer in eventbrite_organizer_response.data['organizers']:
@@ -223,17 +244,17 @@ class EventView(CustomModelView):
 							if organizer_id == None:
 								organizer_id = eventbrite_organizer_response.data['organizers'][0]['organizer']['id'] # give up, just pick the first one
 						except:
-							flash('There was an retrieving organizers from your eventbrite.')
+							flash('There was an error while retrieving organizers from your eventbrite.')
 							return redirect(url_for('event.index_view'))
 					elif 'process' in eventbrite_organizer_response.data:
 						organizer_id = eventbrite_organizer_response.data['process']['id']
 					else:
-						flash('There was an error adding an organizer to your eventbrite.')
+						flash('There was an error while adding an organizer to your eventbrite.')
 						return redirect(url_for('event.index_view'))
 					
 					# get a list of venues
 					try:
-						eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/user_list_venues', method="GET")
+						eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/user_list_venues')
 					except:
 						flash('There was an retrieving venues from your eventbrite.')
 						return redirect(url_for('event.index_view'))
@@ -255,7 +276,8 @@ class EventView(CustomModelView):
 							"region": event_object.location.state,
 							"country_code": event_object.location.country
 						}
-						eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/venue_new', eventbrite_venue_requestbody, method="POST")						
+						eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/venue_new', eventbrite_venue_requestbody, method="POST")
+						print eventbrite_venue_response.data
 						if 'process' in eventbrite_venue_response.data:
 							venue_id = eventbrite_venue_response.data['process']['id']
 						else:
@@ -268,7 +290,7 @@ class EventView(CustomModelView):
 						"start_date": event_object.start.strftime("%Y-%m-%d %H:%M:%S"),
 						"end_date": event_object.end.strftime("%Y-%m-%d %H:%M:%S"),
 						"title": event_object.summary,
-						"timezone": timezone,
+						"timezone": event_object.calendar.timezone,
 						"description": event_object.description,
 						"privacy": 1,
 						"status": "live"
@@ -306,8 +328,8 @@ class EventView(CustomModelView):
 					
 					flash('The selected events were approved.')
 					
-				if request.endpoint == "event.approve_view" and errors:
-					return '<b>Event approval failed: ' + ", ".join(get_flashed_messages()) + '</b>'
+				if (request.endpoint == "event.approve_view") and get_flashed_messages():
+					return '<b>There were issues with adding your events to the calendar: ' + ", ".join(get_flashed_messages()) + '</b>'
 				elif request.endpoint == "event.approve_view":
 					return '<b>Event successfully approved.</b>'
 				else:
