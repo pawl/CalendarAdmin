@@ -116,7 +116,7 @@ class EventView(CustomModelView):
 			event_object = Event.query.get(int(id))
 			if event_object:
 				errors = False
-
+				
 				# check to see if other users have meetup/eventbrite linked, if yes - direct the user to settings
 				if not event_object.calendar.meetup_disabled and not g.user.meetup_id and any([(user.meetup_id and g.user.id != user.id) for user in event_object.calendar.users]):
 					flash('Other owners of this calendar have a Meetup account linked. Please link your Meetup account.')
@@ -164,7 +164,7 @@ class EventView(CustomModelView):
 						errors = True
 				else:
 					flash('A similar event already exists in your google calendar.')
-					
+				
 				
 				##############
 				# MEETUP
@@ -173,31 +173,44 @@ class EventView(CustomModelView):
 					if not is_valid_credentials(name="meetup"):
 						return redirect(url_for('subaccount_login', provider_name="meetup", next=request.url))
 					
-					# create venue if it doesn't exist, otherwise use the returned possible match
-					# somehow this is passed to authomatic as a param and it's escaped, no json + json header required
-					meetup_venue_requestbody = {
-						"address_1": event_object.location.address,
-						"city": event_object.location.city,
-						"name": event_object.location.title,
-						"state": event_object.location.state,
-						"country": event_object.location.country
-					}
-					meetup_venue_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/' + g.user.meetup_group_name + '/venues', meetup_venue_requestbody, method="POST")
+					# workaround for address_1_error, see if venue exists first
+					meetup_venue_request_params = {
+						"group_urlname": g.user.meetup_group_name
+					}					
+					meetup_venue_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/2/venues.json/', meetup_venue_request_params)
 					
+					# try to find a matching venue
 					meetup_venue_id = None
-					if meetup_venue_response.status == 409:
-						meetup_venue_id = meetup_venue_response.data['errors'][0]['potential_matches'][0]['id'] #TODO: make this more accurate and actually get the most similar venue
-					elif meetup_venue_response.status == 201:
-						meetup_venue_id = meetup_venue_response.data['id']
-					elif meetup_venue_response.status == 400:
-						reasons = ", ".join([error['code'] for error in meetup_venue_response.data['errors']])
-						flash('There was an error adding a venue to your meetup. Error Code: ' + str(meetup_venue_response.status) + ' Reason: ' + reasons)
-						if "address_1_error" in reasons:
-							flash("Try adding a zip-code to your venue's address.")
-						errors = True
-					else: # error status without reasons, could be 404
-						flash('There was an error adding a venue to your meetup. Error Code: ' + str(meetup_venue_response.status))
-						errors = True
+					for venue in meetup_venue_response.data['results']:
+						if event_object.location.title == venue['name']:
+							meetup_venue_id = venue['id']
+					
+					if meetup_venue_id is None:
+						# create venue if it doesn't exist, otherwise use the returned possible match
+						# somehow this is passed to authomatic as a param and it's escaped, no json + json header required
+						meetup_create_venue_requestbody = {
+							"address_1": event_object.location.address,
+							"city": event_object.location.city,
+							"name": event_object.location.title,
+							"state": event_object.location.state,
+							"country": event_object.location.country
+						}
+						meetup_venue_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/' + g.user.meetup_group_name + '/venues', meetup_create_venue_requestbody, method="POST")
+						
+						meetup_venue_id = None
+						if meetup_venue_response.status == 409:
+							meetup_venue_id = meetup_venue_response.data['errors'][0]['potential_matches'][0]['id'] #TODO: make this more accurate and actually get the most similar venue
+						elif meetup_venue_response.status == 201:
+							meetup_venue_id = meetup_venue_response.data['id']
+						elif meetup_venue_response.status == 400:
+							reasons = ", ".join([error['code'] for error in meetup_venue_response.data['errors']])
+							flash('There was an error adding a venue to your meetup. Error Code: ' + str(meetup_venue_response.status) + ' Reason: ' + reasons)
+							if "address_1_error" in reasons:
+								flash("Try adding a zip-code to your venue's address.")
+							errors = True
+						else: # error status without reasons, could be 404
+							flash('There was an error adding a venue to your meetup. Error Code: ' + str(meetup_venue_response.status))
+							errors = True
 					
 					if meetup_venue_id:
 						meetup_start = arrow.get(event_object.start, event_object.calendar.timezone)
@@ -234,7 +247,7 @@ class EventView(CustomModelView):
 						"description": ""
 					}
 					eventbrite_organizer_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/organizer_new', eventbrite_organizer_requestbody, method="POST")
-					print eventbrite_organizer_response.data
+					
 					if 'error' in eventbrite_organizer_response.data:
 						# search for organizers and pick the first one
 						eventbrite_organizer_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/user_list_organizers')
@@ -258,7 +271,7 @@ class EventView(CustomModelView):
 					try:
 						eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/user_list_venues')
 					except:
-						flash('There was an retrieving venues from your eventbrite.')
+						flash('There was an error while retrieving venues from your eventbrite.')
 						return redirect(url_for('event.index_view'))
 					
 					# try to find a matching venue
@@ -279,7 +292,6 @@ class EventView(CustomModelView):
 							"country_code": event_object.location.country
 						}
 						eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/venue_new', eventbrite_venue_requestbody, method="POST")
-						print eventbrite_venue_response.data
 						if 'process' in eventbrite_venue_response.data:
 							eventbrite_venue_id = eventbrite_venue_response.data['process']['id']
 						else:
