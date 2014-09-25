@@ -183,21 +183,23 @@ class EventView(CustomModelView):
 						"country": event_object.location.country
 					}
 					meetup_venue_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/' + g.user.meetup_group_name + '/venues', meetup_venue_requestbody, method="POST")
+					
+					meetup_venue_id = None
 					if meetup_venue_response.status == 409:
-						venue_id = meetup_venue_response.data['errors'][0]['potential_matches'][0]['id'] #TODO: make this more accurate and actually get the most similar venue
+						meetup_venue_id = meetup_venue_response.data['errors'][0]['potential_matches'][0]['id'] #TODO: make this more accurate and actually get the most similar venue
+					elif meetup_venue_response.status == 201:
+						meetup_venue_id = meetup_venue_response.data['id']
 					elif meetup_venue_response.status == 400:
 						reasons = ", ".join([error['code'] for error in meetup_venue_response.data['errors']])
 						flash('There was an error adding a venue to your meetup. Error Code: ' + str(meetup_venue_response.status) + ' Reason: ' + reasons)
 						if "address_1_error" in reasons:
 							flash("Try adding a zip-code to your venue's address.")
 						errors = True
-					elif meetup_venue_response.status == 201:
-						venue_id = meetup_venue_response.data['id']
 					else: # error status without reasons, could be 404
 						flash('There was an error adding a venue to your meetup. Error Code: ' + str(meetup_venue_response.status))
 						errors = True
 					
-					if venue_id:
+					if meetup_venue_id:
 						meetup_start = arrow.get(event_object.start, event_object.calendar.timezone)
 						meetup_start = (meetup_start-meetup_start.dst()).to('utc').timestamp # adjust for dst and return timestamp
 						
@@ -211,7 +213,7 @@ class EventView(CustomModelView):
 							"duration": (meetup_end*1000) - (meetup_start*1000),
 							"time": meetup_start*1000,
 							"description": event_object.description,
-							"venue_id": venue_id,
+							"venue_id": meetup_venue_id,
 							"publish_status": "published"
 						}
 						meetup_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/2/event.json/', meetup_requestbody, method="POST")
@@ -260,13 +262,13 @@ class EventView(CustomModelView):
 						return redirect(url_for('event.index_view'))
 					
 					# try to find a matching venue
-					venue_id = None
+					eventbrite_venue_id = None
 					for venue in eventbrite_venue_response.data['venues']:
 						if event_object.location.title == venue['venue']['name']:
-							venue_id = venue['venue']['id']
+							eventbrite_venue_id = venue['venue']['id']
 					
-					# create a venue if one isn't found
-					if venue_id is None:
+					# create a venue if one isn't found, possible bug: allows creating infinite duplicates
+					if eventbrite_venue_id is None:
 						# attempt to create venue
 						eventbrite_venue_requestbody = {
 							"organizer_id": organizer_id,
@@ -279,14 +281,14 @@ class EventView(CustomModelView):
 						eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/venue_new', eventbrite_venue_requestbody, method="POST")
 						print eventbrite_venue_response.data
 						if 'process' in eventbrite_venue_response.data:
-							venue_id = eventbrite_venue_response.data['process']['id']
+							eventbrite_venue_id = eventbrite_venue_response.data['process']['id']
 						else:
 							flash('There was an error adding an venue to your eventbrite.')
 							return redirect(url_for('event.index_view'))
 					
 					eventbrite_requestbody = {
 						"organizer_id": organizer_id,
-						"venue_id": venue_id,
+						"venue_id": eventbrite_venue_id,
 						"start_date": event_object.start.strftime("%Y-%m-%d %H:%M:%S"),
 						"end_date": event_object.end.strftime("%Y-%m-%d %H:%M:%S"),
 						"title": event_object.summary,
