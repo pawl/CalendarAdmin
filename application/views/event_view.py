@@ -342,10 +342,8 @@ class EventView(CustomModelView):
 					
 					flash('The selected events were approved.')
 					
-				if (request.endpoint == "event.approve_view") and get_flashed_messages():
-					return '<b>There were issues with adding your events to the calendar: ' + ", ".join(get_flashed_messages()) + '</b>'
-				elif request.endpoint == "event.approve_view":
-					return '<b>Event successfully approved.</b>'
+				if request.endpoint == "event.approve_view":
+					return '<b>' + ", ".join(get_flashed_messages()) + '</b>'
 				else:
 					return redirect(url_for('event.index_view'))
 			else:
@@ -381,7 +379,7 @@ class EventView(CustomModelView):
 	def get_query(self):
 		if not Location.query.join(Location.calendar).filter(Calendar.users.any(User.id == g.user.id)).first():
 			flash('You need to add an approved venue before you can add an event.')
-		if not Calendar.query.filter(Calendar.enabled == True).first():
+		if not Calendar.query.fihttp://southpark.cc.com/full-episodes/s18e01-go-fund-yourselflter(Calendar.enabled == True).first():
 			flash('You need to enable a calendar before you can add an event.')
 		
 		return Event.query.join(Event.calendar).filter(Calendar.users.any(User.id == g.user.id))
