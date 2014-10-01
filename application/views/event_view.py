@@ -117,21 +117,43 @@ class EventView(CustomModelView):
 			if event_object:
 				errors = False
 				
-				# check to see if other users have meetup/eventbrite linked, if yes - direct the user to settings
-				if not event_object.calendar.meetup_disabled and not g.user.meetup_id and any([(user.meetup_id and g.user.id != user.id) for user in event_object.calendar.users]):
-					flash('Other owners of this calendar have a Meetup account linked. Please link your Meetup account.')
-					return redirect(url_for('settings.index'))
-				if not event_object.calendar.eventbrite_disabled and not g.user.eventbrite_id and any([(user.eventbrite_id and g.user.id != user.id) for user in event_object.calendar.users]):
-					flash('Other owners of this calendar have a Eventbrite account linked. Please link your Eventbrite account.')
-					return redirect(url_for('settings.index'))
+				# check if user is logged into google - mandatory
+				if not is_valid_credentials():
+					return redirect(url_for('login', next=url_for('event.index_view')))	
 				
+				# TODO: combine meetup and eventbrite login checks into one
+				# check if login is required for meetup or eventbrite, and redirect to login
+				# this must be before the requests or it will cause duplicate event submissions!
+				if event_object.to_meetup and not event_object.calendar.meetup_disabled:
+					if g.user.meetup_id:
+						if not is_valid_credentials(name="meetup"):
+							flash('Credentials required refreshing. Try approving your event again.')
+							return redirect(url_for('subaccount_login', provider_name="meetup", next=url_for('event.index_view')))
+					else:
+						# check to see if other users have meetup linked, if yes - direct the user to settings
+						if any([(user.meetup_id and g.user.id != user.id) for user in event_object.calendar.users]):
+							flash('Other owners of this calendar have a Meetup account linked. Please link your Meetup account.')
+						else:
+							flash('Approving this event requires your Meetup account to be linked. Please link your Meetup account.')
+						return redirect(url_for('settings.index'))
+					
+				if event_object.to_eventbrite and not event_object.calendar.eventbrite_disabled:
+					if g.user.eventbrite_id:
+						if not is_valid_credentials(name="eventbrite"):
+							flash('Credentials required refreshing. Try approving your event again.')
+							return redirect(url_for('subaccount_login', provider_name="eventbrite", next=url_for('event.index_view')))
+					else:
+						# check to see if other users have eventbrite linked, if yes - direct the user to settings
+						if any([(user.eventbrite_id and g.user.id != user.id) for user in event_object.calendar.users]):
+							flash('Other owners of this calendar have a Eventbrite account linked. Please link your Eventbrite account.')
+						else:
+							flash('Approving this event requires your Eventbrite account to be linked. Please link your Eventbrite account.')
+						return redirect(url_for('settings.index'))
+						
 				###########################
 				# GOOGLE CALENDAR
 				###########################
 				#if not event_object.calendar.google_disabled and event_object.to_google: # for when Google Calendar can be disabled
-				
-				if not is_valid_credentials():
-					return redirect(url_for('login', next=request.url))
 				
 				# +'Z' is short-hand for GMT timezone
 				google_find_duplicate_params = {
@@ -169,10 +191,7 @@ class EventView(CustomModelView):
 				##############
 				# MEETUP
 				##############
-				if g.user.meetup_id and event_object.to_meetup and not event_object.calendar.meetup_disabled:
-					if not is_valid_credentials(name="meetup"):
-						return redirect(url_for('subaccount_login', provider_name="meetup", next=request.url))
-					
+				if event_object.to_meetup and not event_object.calendar.meetup_disabled:					
 					# workaround for address_1_error, see if venue exists first
 					meetup_venue_request_params = {
 						"group_urlname": g.user.meetup_group_name
@@ -237,10 +256,7 @@ class EventView(CustomModelView):
 				#######################
 				# EVENTBRITE
 				#######################
-				if g.user.eventbrite_id and event_object.to_eventbrite and not event_object.calendar.eventbrite_disabled:
-					if not is_valid_credentials(name="eventbrite"):
-						return redirect(url_for('subaccount_login', provider_name="eventbrite", next=request.url))
-						
+				if event_object.to_eventbrite and not event_object.calendar.eventbrite_disabled:						
 					# attempt to create organizer
 					eventbrite_organizer_requestbody = {
 						"name": event_object.requester_name,
