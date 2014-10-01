@@ -61,7 +61,7 @@ class CalendarView(CustomModelView):
 				existing_calendar.users.append(g.user)
 				db.session.commit()
 			elif not Calendar.query.filter(db.and_(Calendar.calendar_id == calendar['id'], Calendar.users.any(User.id == g.user.id))).first():
-				new_calendar = Calendar(calendar['id'], calendar['summary'])
+				new_calendar = Calendar(calendar['id'], calendar['summary'], calendar['timeZone'])
 				new_calendar.users.append(g.user)
 				db.session.add(new_calendar)
 			
