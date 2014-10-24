@@ -162,7 +162,11 @@ class EventView(CustomModelView):
 					"timeZone": event_object.calendar.timezone
 				}
 				google_find_duplicates_response = authomatic.access(credentials(), 'https://www.googleapis.com/calendar/v3/calendars/' + urllib.quote(event_object.calendar.calendar_id) + '/events', params=google_find_duplicate_params)
-				existing_events = [event for event in google_find_duplicates_response.data['items'] if (event_object.location.title == event['location']) or (event_object.summary == event['summary'])]
+				try:
+					existing_events = [event for event in google_find_duplicates_response.data['items'] if (event_object.location.title == event['location']) or (event_object.summary == event['summary'])]
+				except KeyError:
+					app.logger.error(event)
+					raise
 				
 				if not any(existing_events):
 					google_add_event_requestbody = {
