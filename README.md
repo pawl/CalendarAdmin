@@ -47,8 +47,8 @@ Requests are approved or denied by calendar administrators via e-mail or the web
  * MANDRILL_API_KEY - Get an API key from the Mandrill settings page, also follow their instructions to set the appropriate DNS settings on your domain. This is required to send email.
  * IMGUR_ID - Log into imgur and go to https://imgur.com/account/settings/apps. You just need the client_id. This is for the images of locations.
  * ENCRYPTION_KEY - Any 16 or 32 characters. This is used for encrypting info in urls.
- * EVENTBRITE_CUSTOMER_KEY & EVENTBRITE_CUSTOMER_SECRET - Once you log into your eventbrite account, go to https://www.eventbrite.com/myaccount/apps/ and register your application. Use http://www.<your domain>.com/subaccount_login/eventbrite for the OAuth Redirect URI.
- * MEETUP_CUSTOMER_KEY & MEETUP_CUSTOMER_SECRET - Once you log into your meetup.com account, go to https://secure.meetup.com/meetup_api/oauth_consumers/ and register your application. Use www.<your domain>.com/subaccount_login/meetup for the OAuth Redirect URI.
+ * EVENTBRITE_CUSTOMER_KEY & EVENTBRITE_CUSTOMER_SECRET - Once you log into your eventbrite account, go to https://www.eventbrite.com/myaccount/apps/ and register your application. Use http://www.your_domain.com/subaccount_login/eventbrite for the OAuth Redirect URI.
+ * MEETUP_CUSTOMER_KEY & MEETUP_CUSTOMER_SECRET - Once you log into your meetup.com account, go to https://secure.meetup.com/meetup_api/oauth_consumers/ and register your application. Use www.your_domain.com/subaccount_login/meetup for the OAuth Redirect URI.
 5. To get image processing working for the locations view, you may need to apt-get some additional libraries: http://askubuntu.com/a/272095
 
 Your etc/environment file should end up having these lines:
