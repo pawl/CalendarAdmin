@@ -60,11 +60,13 @@ GOOGLE_CUSTOMER_SECRET='secret'
 MEETUP_CUSTOMER_KEY='secret'
 MEETUP_CUSTOMER_SECRET='secret'
 IMGUR_ID='aaaaaaaaaaaaaaa'
+EVENTBRITE_CUSTOMER_KEY='secret'
+EVENTBRITE_CUSTOMER_SECRET='secret'
 ```
 
 ### Setup For Production
 * Set environmental variables on heroku:
- * heroku config:add PRODUCTION_SETTINGS='production_settings.py' MANDRILL_API_KEY='secret' SECRET_KEY='secret' DOMAIN_NAME='www.yourdomain.com' ENCRYPTION_KEY='secret' GOOGLE_CUSTOMER_KEY='secret' GOOGLE_CUSTOMER_SECRET='secret' MEETUP_CUSTOMER_KEY='secret' MEETUP_CUSTOMER_SECRET='secret' IMGUR_ID='aaaaaaaaaaaaaaa'
+ * heroku config:add PRODUCTION_SETTINGS='production_settings.py' MANDRILL_API_KEY='secret' SECRET_KEY='secret' DOMAIN_NAME='www.yourdomain.com' ENCRYPTION_KEY='secret' GOOGLE_CUSTOMER_KEY='secret' GOOGLE_CUSTOMER_SECRET='secret' MEETUP_CUSTOMER_KEY='secret' MEETUP_CUSTOMER_SECRET='secret' IMGUR_ID='aaaaaaaaaaaaaaa' EVENTBRITE_CUSTOMER_KEY='secret' EVENTBRITE_CUSTOMER_SECRET='secret
   * heroku config:set PYTHONPATH='fakepath'
 * https://github.com/albertogg/flask-bootstrap-skel#production-configuration
 
