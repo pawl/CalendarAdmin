@@ -76,7 +76,7 @@
 						<div class="form-group">
 							<label for="start" class="col-lg-3 control-label">Start Time</label>
 							<div class="col-lg-9">
-								<input data-role="datetimepicker" id="start" name="start" type="text" value="">
+                                <input data-date-format="YYYY-MM-DD HH:mm" data-role="datetimepicker" id="start" name="start" type="text" value="" class="">
 								{% if form.start.errors %}
 								<ul>
 									{% for e in form.start.errors %}
@@ -89,7 +89,7 @@
 						<div class="form-group">
 							<label for="end" class="col-lg-3 control-label">End Time</label>
 							<div class="col-lg-9">
-								<input data-role="datetimepicker" id="end" name="end" type="text" value="">
+                                <input data-date-format="YYYY-MM-DD HH:mm" data-role="datetimepicker" id="end" name="end" type="text" value="" class="">
 								{% if form.end.errors %}
 								<ul>
 									{% for e in form.end.errors %}
