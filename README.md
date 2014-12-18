@@ -34,20 +34,30 @@ Requests are approved or denied by calendar administrators via e-mail or the web
 
 ### Setup For Development
 1. Run "pip install -r requirements/dev.txt" to install requirements.
-2. Initialize the DB: https://github.com/albertogg/flask-bootstrap-skel#initialize-db
-4. You need to fill in some environmental variables to your etc/environment file:
+2. Initialize the DB by running: 
+    ```
+    $ fab shell
+    >>> db.create_all()
+    >>> exit()
+    ```
+
+3. You need to fill in some environmental variables to your etc/environment file:
+ * SECRET_KEY - required by flask, see "How to generate good secret keys" on this page http://flask.pocoo.org/docs/0.10/quickstart/
  * DOMAIN_NAME - Get a domain. This is required for Google login.
- * AUTH (google section)
+ * DATABASE_URL - The "URL" field on the Connection Settings page for your Heroku Database.
+ * GOOGLE_CUSTOMER_KEY & GOOGLE_CUSTOMER_SECRET
    * In the Google API Console (APIs section under APIS & AUTH), turn on Calendar API and Google+ API.
     * In the Credentials section of the Google API Console, click "Create new Client ID".
      * Application type: Web Application
       * Use http://www.your_domain.com:8080/login for the AUTHORIZED REDIRECT URI, leave the AUTHORIZED JAVASCRIPT ORIGINS as example.com.
       * GOOGLE_CUSTOMER_KEY  - Use "CLIENT ID"
       * GOOGLE_CUSTOMER_SECRET - Use "CLIENT SECRET"
- * MANDRILL_API_KEY - Get an API key from Mandrill and follow their instructions to set the appropriate DNS settings on your domain. This is required to send email.
- * IMGUR_ID - Register your application with Imgur to post anonymously. You just need the client_id. This is for the images of locations.
- * ENCRYPTION_KEY - any 16 or 32 characters.
-5. To get image processing working for the locations view, you may need to apt-get some additional libraries: http://askubuntu.com/a/272095
+ * MANDRILL_API_KEY - Get an API key from the Mandrill settings page, also follow their instructions to set the appropriate DNS settings on your domain. This is required to send email.
+ * IMGUR_ID - Log into imgur and go to https://imgur.com/account/settings/apps. You just need the client_id. This is for the images of locations.
+ * ENCRYPTION_KEY - Any 16 or 32 characters. This is used for encrypting info in urls.
+ * EVENTBRITE_CUSTOMER_KEY & EVENTBRITE_CUSTOMER_SECRET - Once you log into your eventbrite account, go to https://www.eventbrite.com/myaccount/apps/ and register your application. Use http://www.your_domain.com/subaccount_login/eventbrite for the OAuth Redirect URI.
+ * MEETUP_CUSTOMER_KEY & MEETUP_CUSTOMER_SECRET - Once you log into your meetup.com account, go to https://secure.meetup.com/meetup_api/oauth_consumers/ and register your application. Use www.your_domain.com/subaccount_login/meetup for the OAuth Redirect URI.
+4. To get image processing working for the locations view, you may need to apt-get some additional libraries: http://askubuntu.com/a/272095
 
 Your etc/environment file should end up having these lines:
 ```
@@ -60,11 +70,13 @@ GOOGLE_CUSTOMER_SECRET='secret'
 MEETUP_CUSTOMER_KEY='secret'
 MEETUP_CUSTOMER_SECRET='secret'
 IMGUR_ID='aaaaaaaaaaaaaaa'
+EVENTBRITE_CUSTOMER_KEY='secret'
+EVENTBRITE_CUSTOMER_SECRET='secret'
 ```
 
 ### Setup For Production
 * Set environmental variables on heroku:
- * heroku config:add PRODUCTION_SETTINGS='production_settings.py' MANDRILL_API_KEY='secret' SECRET_KEY='secret' DOMAIN_NAME='www.yourdomain.com' ENCRYPTION_KEY='secret' GOOGLE_CUSTOMER_KEY='secret' GOOGLE_CUSTOMER_SECRET='secret' MEETUP_CUSTOMER_KEY='secret' MEETUP_CUSTOMER_SECRET='secret' IMGUR_ID='aaaaaaaaaaaaaaa'
+ * heroku config:add PRODUCTION_SETTINGS='production_settings.py' MANDRILL_API_KEY='secret' SECRET_KEY='secret' DOMAIN_NAME='www.yourdomain.com' ENCRYPTION_KEY='secret' GOOGLE_CUSTOMER_KEY='secret' GOOGLE_CUSTOMER_SECRET='secret' MEETUP_CUSTOMER_KEY='secret' MEETUP_CUSTOMER_SECRET='secret' IMGUR_ID='aaaaaaaaaaaaaaa' EVENTBRITE_CUSTOMER_KEY='secret' EVENTBRITE_CUSTOMER_SECRET='secret
   * heroku config:set PYTHONPATH='fakepath'
 * https://github.com/albertogg/flask-bootstrap-skel#production-configuration
 
