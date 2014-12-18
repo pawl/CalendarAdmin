@@ -34,8 +34,13 @@ Requests are approved or denied by calendar administrators via e-mail or the web
 
 ### Setup For Development
 1. Run "pip install -r requirements/dev.txt" to install requirements.
-2. Initialize the DB: https://github.com/albertogg/flask-bootstrap-skel#initialize-db
-4. You need to fill in some environmental variables to your etc/environment file:
+2. Initialize the DB by running: 
+```
+$ fab shell
+>>> db.create_all()
+>>> exit()
+```
+3. You need to fill in some environmental variables to your etc/environment file:
  * SECRET_KEY - required by flask, see "How to generate good secret keys" on this page http://flask.pocoo.org/docs/0.10/quickstart/
  * DOMAIN_NAME - Get a domain. This is required for Google login.
  * DATABASE_URL - The "URL" field on the Connection Settings page for your Heroku Database.
@@ -51,7 +56,7 @@ Requests are approved or denied by calendar administrators via e-mail or the web
  * ENCRYPTION_KEY - Any 16 or 32 characters. This is used for encrypting info in urls.
  * EVENTBRITE_CUSTOMER_KEY & EVENTBRITE_CUSTOMER_SECRET - Once you log into your eventbrite account, go to https://www.eventbrite.com/myaccount/apps/ and register your application. Use http://www.your_domain.com/subaccount_login/eventbrite for the OAuth Redirect URI.
  * MEETUP_CUSTOMER_KEY & MEETUP_CUSTOMER_SECRET - Once you log into your meetup.com account, go to https://secure.meetup.com/meetup_api/oauth_consumers/ and register your application. Use www.your_domain.com/subaccount_login/meetup for the OAuth Redirect URI.
-5. To get image processing working for the locations view, you may need to apt-get some additional libraries: http://askubuntu.com/a/272095
+4. To get image processing working for the locations view, you may need to apt-get some additional libraries: http://askubuntu.com/a/272095
 
 Your etc/environment file should end up having these lines:
 ```
