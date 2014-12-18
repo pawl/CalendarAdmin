@@ -36,8 +36,9 @@ Requests are approved or denied by calendar administrators via e-mail or the web
 1. Run "pip install -r requirements/dev.txt" to install requirements.
 2. Initialize the DB: https://github.com/albertogg/flask-bootstrap-skel#initialize-db
 4. You need to fill in some environmental variables to your etc/environment file:
+ * SECRET_KEY - required by flask, see "How to generate good secret keys" on this page http://flask.pocoo.org/docs/0.10/quickstart/
  * DOMAIN_NAME - Get a domain. This is required for Google login.
- * AUTH (google section)
+ * GOOGLE_CUSTOMER_KEY & GOOGLE_CUSTOMER_SECRET
    * In the Google API Console (APIs section under APIS & AUTH), turn on Calendar API and Google+ API.
     * In the Credentials section of the Google API Console, click "Create new Client ID".
      * Application type: Web Application
