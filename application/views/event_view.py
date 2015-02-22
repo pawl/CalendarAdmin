@@ -240,7 +240,6 @@ class EventView(CustomModelView):
                 ###########################
                 # GOOGLE CALENDAR
                 ###########################
-                #if not event_object.calendar.google_disabled and event_object.to_google: # for when Google Calendar can be disabled
                 
                 # +'Z' is short-hand for GMT timezone
                 google_find_duplicate_params = {
@@ -248,11 +247,13 @@ class EventView(CustomModelView):
                     "timeMax": event_object.end.isoformat() + 'Z',
                     "timeZone": event_object.calendar.timezone
                 }
+                
                 google_find_duplicates_response = authomatic.access(
                     credentials(),
                     'https://www.googleapis.com/calendar/v3/calendars/' + urllib.quote(event_object.calendar.calendar_id) + '/events',
                     params=google_find_duplicate_params
                 )
+                
                 try:
                     existing_events = [
                         event for event in google_find_duplicates_response.data['items'] 
@@ -291,7 +292,6 @@ class EventView(CustomModelView):
                         errors = True
                 else:
                     flash('A similar event already exists in your google calendar.')
-                
                 
                 ##############
                 # MEETUP

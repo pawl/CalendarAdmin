@@ -64,7 +64,7 @@ class LocationView(CustomModelView):
         'state': 'State (Only US or CA, 2 Letters)'
     }
     
-    # TODO: if multiple calendars have a location, it will clear all but 1
+    # TODO: fix - if multiple calendars have a location, it will clear all but 1
     form_columns = (
         'title',
         'address',
