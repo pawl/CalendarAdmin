@@ -1,13 +1,15 @@
 import tempfile
+import requests
+import StringIO
+
+from base64 import b64encode
 from application.views.custom_model_view import CustomModelView
 from application.models import Location, Calendar, User
 from wtforms.validators import ValidationError, required
 from flask.ext.admin.form.upload import ImageUploadField, ImageUploadInput
 from flask import g, url_for
-from application import app
-import requests
-from base64 import b64encode
-import StringIO
+from application import app, db
+
 
 # fixes '/static/' before thumbnail URL
 class ModifiedImageUploadInput(ImageUploadInput):
@@ -21,7 +23,8 @@ class ModifiedImageUploadInput(ImageUploadInput):
             filename = filename
 
         return 'http://i.imgur.com/' + filename + 't.jpg' # small thumbnail
-        
+
+
 # override ImageUploadField to upload images to imgur instead
 # idea from quokka: https://github.com/pythonhub/quokka/blob/f89653bbe753319ca204d8e3aba482492f4858fe/quokka/core/admin/fields.py
 class ImgurImageField(ImageUploadField):
@@ -48,7 +51,8 @@ class ImgurImageField(ImageUploadField):
             }
         )
         return request.json()['data']['id']
-            
+
+
 class LocationView(CustomModelView):
     # Override displayed fields
     column_list = ('title','calendar')
@@ -86,4 +90,11 @@ class LocationView(CustomModelView):
         return Calendar.query.filter(Calendar.users.any(User.id == g.user.id)).all()
 
     def get_query(self):
-        return Location.query.join(Location.calendar).filter(Calendar.users.any(User.id == g.user.id))
+        return Location.query.join(Location.calendar).\
+                              filter(Calendar.users.any(User.id == g.user.id))
+        
+    def get_count_query(self):
+        return self.session.query(db.func.count('*')).\
+                            select_from(self.model).\
+                            join(Location.calendar).\
+                            filter(Calendar.users.any(User.id == g.user.id))

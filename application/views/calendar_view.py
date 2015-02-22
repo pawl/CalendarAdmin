@@ -7,6 +7,7 @@ from application import app, db, authomatic
 from flask import flash, g
 from flask.ext.admin.actions import action
 
+
 class CalendarView(CustomModelView):
     #TODO: the pagination needs to be per-user, not for the whole database
     #TODO: add validation to prevent a venue from being added to a calendar which isn't "applicable"
@@ -17,7 +18,12 @@ class CalendarView(CustomModelView):
     can_edit = True
     new_actions = True
     column_list = ('summary','enabled','url')
-    column_labels = {'summary': 'Calendar Title', 'enabled': 'Calendar Admin Enabled', 'url': 'Public URL for Event Requests', 'locations': 'Approved Event Venues'}
+    column_labels = {
+        'summary': 'Calendar Title',
+        'enabled': 'Calendar Admin Enabled',
+        'url': 'Public URL for Event Requests',
+        'locations': 'Approved Event Venues'
+    }
     form_columns = ('locations', 'redirect_url', 'meetup_disabled', 'eventbrite_disabled') # 'google_disabled' (wouldn't make sense to disable google calendars at this point)
     
     # TODO: clean this up
@@ -70,6 +76,11 @@ class CalendarView(CustomModelView):
             
         db.session.commit()
         return Calendar.query.filter(Calendar.users.any(User.id == g.user.id))
+        
+    def get_count_query(self):
+        return self.session.query(db.func.count('*')).\
+                            select_from(self.model).\
+                            filter(Calendar.users.any(User.id == g.user.id))
     
     # override forms to prevent users from seeing eachother's data: https://gist.github.com/mrjoes/5521548
     # Hook form creation methods

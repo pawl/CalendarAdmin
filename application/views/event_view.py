@@ -16,6 +16,7 @@ from flask.ext.admin import expose
 from flask.ext.admin.actions import action
 from sqlalchemy.orm.exc import NoResultFound
 
+
 class EventView(CustomModelView):
     #TODO: override action_delete and send email for deny too
     new_actions = True # used for triggering new_actions macro in list.html
@@ -450,6 +451,12 @@ class EventView(CustomModelView):
             flash('You need to enable a calendar before you can add an event.')
         
         return Event.query.join(Event.calendar).filter(Calendar.users.any(User.id == g.user.id))
+        
+    def get_count_query(self):
+        return self.session.query(db.func.count('*')).\
+                            select_from(self.model).\
+                            join(Event.calendar).\
+                            filter(Calendar.users.any(User.id == g.user.id))
             
     # TODO: prevent users from accessing records which aren't their own
     def is_accessible(self):
