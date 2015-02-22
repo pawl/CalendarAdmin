@@ -9,7 +9,8 @@ from application.views.custom_model_view import CustomModelView
 from wtforms import form, fields, validators
 from wtforms.validators import ValidationError
 from application.models import Calendar, Event, Location, User
-from application.helpers import decrypt_string, is_valid_credentials, credentials, encrypt_string
+from application.helpers import (decrypt_string, is_valid_credentials,
+                                 credentials, encrypt_string)
 from application import app, db, mandrill, authomatic
 from flask import request, redirect, flash, url_for, g, get_flashed_messages
 from flask.ext.admin import expose
@@ -52,17 +53,24 @@ class EventView(CustomModelView):
     def must_be_future(form, field):
         if form.start.data and (form.start.data < datetime.datetime.now()):
             raise ValidationError('Start time must be greater than current time.')
+            
     # add end date must be greater than start date validation
     def end_must_be_greater(form, field):
         if form.end.data and form.start.data and (form.end.data < form.start.data):
             raise ValidationError('End date must be greater than the start date.')
+            
     #TODO: combine start_must_not_conflict and end_must_not_conflict?
     def start_must_not_conflict(form, field):
         # exclude currently edited id
-        if Event.query.filter(db.and_(Event.location == form.location.data, Event.start.between(form.start.data, form.end.data), Event.id != request.args.get('id'))).first():
+        if Event.query.filter(db.and_(Event.location == form.location.data, 
+                                      Event.start.between(form.start.data, form.end.data),
+                                      Event.id != request.args.get('id'))).first():
             raise ValidationError('Start time conflicts with another request for the same time.')
+            
     def end_must_not_conflict(form, field):
-        if Event.query.filter(db.and_(Event.location == form.location.data, Event.end.between(form.start.data, form.end.data), Event.id != request.args.get('id'))).first():
+        if Event.query.filter(db.and_(Event.location == form.location.data,
+                                      Event.end.between(form.start.data, form.end.data),
+                                      Event.id != request.args.get('id'))).first():
             raise ValidationError('End time conflicts with another request for the same time.')
             
     form_args = dict(
@@ -89,14 +97,20 @@ class EventView(CustomModelView):
     def request_view(self, calendar_id, redirect_url):
         # ensure calendar id is enabled
         try:
-            result_calendar = Calendar.query.filter(db.and_(Calendar.id == unicode(decrypt_string(calendar_id)), Calendar.enabled == True)).one()
+            result_calendar = Calendar.query.filter(
+                db.and_(Calendar.id == unicode(decrypt_string(calendar_id)), 
+                        Calendar.enabled == True)
+            ).one()
         except NoResultFound:
-            flash('Calendar disabled or calendar does not exist. Ensure URL was entered correctly.')
+            flash('Calendar disabled or calendar does not exist. Ensure URL was'
+                  ' entered correctly.')
             return redirect('/')
         
-        self.calendar_id = decrypt_string(calendar_id) # used in _get_parent_list_location
+        # used in _get_parent_list_location
+        self.calendar_id = decrypt_string(calendar_id)
         form = self.create_form()
-        form.__delitem__('calendar') # remove calendar as a selection option from the form - the URL selects the calendar
+        # remove calendar as a selection option from the form - the URL selects the calendar
+        form.__delitem__('calendar')
         if request.method == 'POST' and form.validate():
             event = Event()
             form.populate_obj(event)
@@ -123,7 +137,10 @@ class EventView(CustomModelView):
             Link to Deny: %s
             
             Link to Modify: %s
-            """ % (event.summary, event.start, event.end, event.description, event.requester_name, event.requester_email, event.to_meetup, event.to_eventbrite, event.location.title, approve_url, deny_url, modify_url)
+            """ % (event.summary, event.start, event.end, event.description,
+                   event.requester_name, event.requester_email, event.to_meetup,
+                   event.to_eventbrite, event.location.title, approve_url,
+                   deny_url, modify_url)
             
             email_addresses = [{'email': user.email} for user in result_calendar.users]
             mandrill.send_email(
@@ -135,14 +152,29 @@ class EventView(CustomModelView):
             
             unescaped_url = urllib.unquote(urllib.unquote(redirect_url))
             if ('http://' in unescaped_url) or ('https://' in unescaped_url):
-                return redirect(unescaped_url, code=302) # TODO: need to redirect to url given by user in request
+                # TODO: need to redirect to url given by user in request
+                return redirect(unescaped_url, code=302)
             else:
-                return redirect("http://"+unescaped_url, code=302) # TODO: need to redirect to url given by user in request
+                # TODO: need to redirect to url given by user in request
+                return redirect("http://"+unescaped_url, code=302)
         
         # location information dictionary for form
-        locations = [{'id': location.id, 'image': location.image_url, 'description': location.description} for location in result_calendar.locations] 
+        locations = [
+            {
+                'id': location.id,
+                'image': location.image_url,
+                'description': location.description
+            } for location in result_calendar.locations
+        ]
         
-        return self.render('request.html', form=form, locations=locations, eventbrite_disabled=result_calendar.eventbrite_disabled, google_disabled=result_calendar.google_disabled, meetup_disabled=result_calendar.meetup_disabled)
+        return self.render(
+            'request.html',
+            form=form,
+            locations=locations,
+            eventbrite_disabled=result_calendar.eventbrite_disabled,
+            google_disabled=result_calendar.google_disabled,
+            meetup_disabled=result_calendar.meetup_disabled
+        )
         
     @action('approve', 'Approve')
     def action_approve(self, ids):
@@ -158,7 +190,8 @@ class EventView(CustomModelView):
                 
                 # check if user is logged into google - mandatory
                 if not is_valid_credentials():
-                    return redirect(url_for('login', next=url_for('event.index_view'))) 
+                    return redirect(url_for('login',
+                                            next=url_for('event.index_view'))) 
                 
                 # TODO: combine meetup and eventbrite login checks into one
                 # check if login is required for meetup or eventbrite, and redirect to login
@@ -166,27 +199,42 @@ class EventView(CustomModelView):
                 if event_object.to_meetup and not event_object.calendar.meetup_disabled:
                     if g.user.meetup_id:
                         if not is_valid_credentials(name="meetup"):
-                            flash('Credentials required refreshing. Try approving your event again.')
-                            return redirect(url_for('subaccount_login', provider_name="meetup", next=url_for('event.index_view')))
+                            flash('Credentials required refreshing. Try '
+                                  'approving your event again.')
+                            return redirect(url_for('subaccount_login',
+                                                    provider_name="meetup", 
+                                                    next=url_for('event.index_view')))
                     else:
                         # check to see if other users have meetup linked, if yes - direct the user to settings
-                        if any([(user.meetup_id and g.user.id != user.id) for user in event_object.calendar.users]):
-                            flash('Other owners of this calendar have a Meetup account linked. Please link your Meetup account.')
+                        if any([(user.meetup_id and g.user.id != user.id)
+                                for user in event_object.calendar.users]):
+                            flash('Other owners of this calendar have a Meetup '
+                                  'account linked. Please link your Meetup account.')
                         else:
-                            flash('Approving this event requires your Meetup account to be linked. Please link your Meetup account.')
+                            flash('Approving this event requires your Meetup '
+                                  'account to be linked. Please link your '
+                                  'Meetup account.')
                         return redirect(url_for('settings.index'))
                     
                 if event_object.to_eventbrite and not event_object.calendar.eventbrite_disabled:
                     if g.user.eventbrite_id:
                         if not is_valid_credentials(name="eventbrite"):
-                            flash('Credentials required refreshing. Try approving your event again.')
-                            return redirect(url_for('subaccount_login', provider_name="eventbrite", next=url_for('event.index_view')))
+                            flash('Credentials required refreshing. Try '
+                                  'approving your event again.')
+                            return redirect(url_for('subaccount_login',
+                                            provider_name="eventbrite",
+                                            next=url_for('event.index_view')))
                     else:
                         # check to see if other users have eventbrite linked, if yes - direct the user to settings
-                        if any([(user.eventbrite_id and g.user.id != user.id) for user in event_object.calendar.users]):
-                            flash('Other owners of this calendar have a Eventbrite account linked. Please link your Eventbrite account.')
+                        if any([(user.eventbrite_id and g.user.id != user.id)
+                                for user in event_object.calendar.users]):
+                            flash('Other owners of this calendar have a Eventbrite'
+                                  ' account linked. Please link your Eventbrite'
+                                  ' account.')
                         else:
-                            flash('Approving this event requires your Eventbrite account to be linked. Please link your Eventbrite account.')
+                            flash('Approving this event requires your Eventbrite '
+                                  'account to be linked. Please link your '
+                                  'Eventbrite account.')
                         return redirect(url_for('settings.index'))
                         
                 ###########################
@@ -196,13 +244,21 @@ class EventView(CustomModelView):
                 
                 # +'Z' is short-hand for GMT timezone
                 google_find_duplicate_params = {
-                    "timeMin": event_object.start.isoformat()+'Z',
-                    "timeMax": event_object.end.isoformat()+'Z',
+                    "timeMin": event_object.start.isoformat() + 'Z',
+                    "timeMax": event_object.end.isoformat() + 'Z',
                     "timeZone": event_object.calendar.timezone
                 }
-                google_find_duplicates_response = authomatic.access(credentials(), 'https://www.googleapis.com/calendar/v3/calendars/' + urllib.quote(event_object.calendar.calendar_id) + '/events', params=google_find_duplicate_params)
+                google_find_duplicates_response = authomatic.access(
+                    credentials(),
+                    'https://www.googleapis.com/calendar/v3/calendars/' + urllib.quote(event_object.calendar.calendar_id) + '/events',
+                    params=google_find_duplicate_params
+                )
                 try:
-                    existing_events = [event for event in google_find_duplicates_response.data['items'] if (event_object.location.title == event['location']) or (event_object.summary == event['summary'])]
+                    existing_events = [
+                        event for event in google_find_duplicates_response.data['items'] 
+                        if ((event_object.location.title == event['location']) or
+                            (event_object.summary == event['summary']))
+                    ]
                 except KeyError:
                     app.logger.error(event)
                     raise
@@ -217,12 +273,18 @@ class EventView(CustomModelView):
                             "dateTime": event_object.end.isoformat(),
                             "timeZone": event_object.calendar.timezone
                         },
-                        "description": event_object.description,
+                        "description": "Host:  " + event_object.requester_name + "\nContact:  " + event_object.requester_email + "\n\n" + event_object.description,
                         "location": event_object.location.title,
                         "summary": event_object.summary
                     }
                     url = 'https://www.googleapis.com/calendar/v3/calendars/' + urllib.quote(event_object.calendar.calendar_id) + '/events'
-                    google_add_event_response = authomatic.access(credentials(), url, method='POST', headers={'Content-Type': 'application/json'}, body=json.dumps(google_add_event_requestbody))
+                    google_add_event_response = authomatic.access(
+                        credentials(),
+                        url,
+                        method='POST',
+                        headers={'Content-Type': 'application/json'},
+                        body=json.dumps(google_add_event_requestbody)
+                    )
                     #print "google", google_response
                     if google_add_event_response.status != 200:
                         flash('There was an error approving your google calendar event. Error Code: ' + str(google_add_event_response.status) + ' Reason: ' + google_add_event_response.reason)
@@ -239,17 +301,22 @@ class EventView(CustomModelView):
                     meetup_venue_request_params = {
                         "group_urlname": g.user.meetup_group_name
                     }                   
-                    meetup_venue_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/2/venues.json/', meetup_venue_request_params)
+                    meetup_venue_response = authomatic.access(
+                        credentials(name="meetup"),
+                        'https://api.meetup.com/2/venues.json/',
+                        meetup_venue_request_params
+                    )
                     
                     # try to find a matching venue
                     meetup_venue_id = None
                     for venue in meetup_venue_response.data['results']:
-                        if (event_object.location.title == venue['name']): #or (event_object.location.address == venue['address_1']):
+                        if (event_object.location.title == venue['name']):
                             meetup_venue_id = venue['id']
                     
                     if meetup_venue_id is None:
                         # create venue if it doesn't exist, otherwise use the returned possible match
-                        # somehow this is passed to authomatic as a param and it's escaped, no json + json header required
+                        # somehow this is passed to authomatic as a param
+                        # it's escaped, no json + json header required
                         meetup_create_venue_requestbody = {
                             "address_1": event_object.location.address,
                             "city": event_object.location.city,
@@ -257,11 +324,17 @@ class EventView(CustomModelView):
                             "state": event_object.location.state,
                             "country": event_object.location.country
                         }
-                        meetup_venue_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/' + g.user.meetup_group_name + '/venues', meetup_create_venue_requestbody, method="POST")
+                        meetup_venue_response = authomatic.access(
+                            credentials(name="meetup"),
+                            'https://api.meetup.com/' + g.user.meetup_group_name + '/venues',
+                            meetup_create_venue_requestbody,
+                            method="POST"
+                        )
                         
                         meetup_venue_id = None
                         if meetup_venue_response.status == 409:
-                            meetup_venue_id = meetup_venue_response.data['errors'][0]['potential_matches'][0]['id'] #TODO: make this more accurate and actually get the most similar venue
+                            # TODO: make this more accurate and actually get the most similar venue
+                            meetup_venue_id = meetup_venue_response.data['errors'][0]['potential_matches'][0]['id'] 
                         elif meetup_venue_response.status == 201:
                             meetup_venue_id = meetup_venue_response.data['id']
                         elif meetup_venue_response.status == 400:
@@ -287,11 +360,16 @@ class EventView(CustomModelView):
                             "name": event_object.summary.encode('utf-8'), # fix "'ascii' codec can't encode character"
                             "duration": (meetup_end*1000) - (meetup_start*1000),
                             "time": meetup_start*1000,
-                            "description": event_object.description.encode('utf-8'),
+                            "description": ("Host:  " + event_object.requester_name + "\nContact:  " + event_object.requester_email + "\n\n" + event_object.description).encode('utf-8'),
                             "venue_id": meetup_venue_id,
                             "publish_status": "published"
                         }
-                        meetup_response = authomatic.access(credentials(name="meetup"), 'https://api.meetup.com/2/event.json/', meetup_requestbody, method="POST")
+                        meetup_response = authomatic.access(
+                            credentials(name="meetup"),
+                            'https://api.meetup.com/2/event.json/',
+                            meetup_requestbody,
+                            method="POST"
+                        )
                         if meetup_response.status != 201:
                             flash('There was an error approving your meetup event. Error Code: ' + str(meetup_response.status) + ' Reason: ' + meetup_response.reason)
                             errors = True
@@ -305,11 +383,19 @@ class EventView(CustomModelView):
                         "name": event_object.requester_name,
                         "description": ""
                     }
-                    eventbrite_organizer_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/organizer_new', eventbrite_organizer_requestbody, method="POST")
+                    eventbrite_organizer_response = authomatic.access(
+                        credentials(name="eventbrite"),
+                        'https://www.eventbrite.com/json/organizer_new',
+                        eventbrite_organizer_requestbody,
+                        method="POST"
+                    )
                     
                     if 'error' in eventbrite_organizer_response.data:
                         # search for organizers and pick the first one
-                        eventbrite_organizer_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/user_list_organizers')
+                        eventbrite_organizer_response = authomatic.access(
+                            credentials(name="eventbrite"), 
+                            'https://www.eventbrite.com/json/user_list_organizers'
+                        )
                         try:
                             organizer_id = None
                             for organizer in eventbrite_organizer_response.data['organizers']:
@@ -328,7 +414,10 @@ class EventView(CustomModelView):
                     
                     # get a list of venues
                     try:
-                        eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/user_list_venues')
+                        eventbrite_venue_response = authomatic.access(
+                            credentials(name="eventbrite"),
+                            'https://www.eventbrite.com/json/user_list_venues'
+                        )
                     except:
                         flash('There was an error while retrieving venues from your eventbrite.')
                         return redirect(url_for('event.index_view'))
@@ -350,7 +439,12 @@ class EventView(CustomModelView):
                             "region": event_object.location.state,
                             "country_code": event_object.location.country
                         }
-                        eventbrite_venue_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/venue_new', eventbrite_venue_requestbody, method="POST")
+                        eventbrite_venue_response = authomatic.access(
+                            credentials(name="eventbrite"),
+                            'https://www.eventbrite.com/json/venue_new',
+                            eventbrite_venue_requestbody,
+                            method="POST"
+                        )
                         if 'process' in eventbrite_venue_response.data:
                             eventbrite_venue_id = eventbrite_venue_response.data['process']['id']
                         else:
@@ -364,11 +458,16 @@ class EventView(CustomModelView):
                         "end_date": event_object.end.strftime("%Y-%m-%d %H:%M:%S"),
                         "title": event_object.summary.encode('utf-8'),
                         "timezone": event_object.calendar.timezone,
-                        "description": event_object.description.encode('utf-8'),
+                        "description": ("Host:  " + event_object.requester_name + "\nContact:  " + event_object.requester_email + "\n\n" + event_object.description).encode('utf-8'),
                         "privacy": 1,
                         "status": "live"
                     }
-                    eventbrite_response = authomatic.access(credentials(name="eventbrite"), 'https://www.eventbrite.com/json/event_new', eventbrite_requestbody, method="POST")
+                    eventbrite_response = authomatic.access(
+                        credentials(name="eventbrite"), 
+                        'https://www.eventbrite.com/json/event_new', 
+                        eventbrite_requestbody, 
+                        method="POST"
+                    )
                     if eventbrite_response.data.get('error_message'):
                         flash('There was an error approving your eventbrite event. Error Code: ' + str(eventbrite_response.status) + ' Reason: ' + eventbrite_response.reason)
                         errors = True
@@ -387,15 +486,19 @@ class EventView(CustomModelView):
                     Location: %s
                     """ % (event_object.summary,
                            event_object.start.strftime("%Y-%m-%d %H:%M"),
-                           event_object.end.strftime("%Y-%m-%d %H:%M"), 
-                           event_object.description, 
-                           event_object.requester_name, 
-                           event_object.requester_email, 
-                           event_object.to_meetup, 
-                           event_object.to_eventbrite, 
+                           event_object.end.strftime("%Y-%m-%d %H:%M"),
+                           event_object.description,
+                           event_object.requester_name,
+                           event_object.requester_email,
+                           event_object.to_meetup,
+                           event_object.to_eventbrite,
                            event_object.location.title)
-                    email_addresses = [{'email': user.email} for user in event_object.calendar.users if user.email != g.user.email] + [{'email': event_object.requester_email}]
-                    print email_addresses
+                    
+                    email_addresses = [
+                        {'email': user.email} for user in event_object.calendar.users
+                        if user.email != g.user.email
+                    ] + [{'email': event_object.requester_email}]
+                    
                     mandrill.send_email(
                         from_email="admin@gcalmanager.com",
                         subject="Calendar Admin Request Approved",
@@ -417,7 +520,8 @@ class EventView(CustomModelView):
             else:
                 return '<b>Event not found. Ensure URL is correct.</b>'
                 
-    # TODO: ensure approve and deny links are always different, so users can't click links in old emails to deny other's requests
+    # TODO: ensure approve and deny links are always different,
+    # so users can't click links in old emails to deny other's requests
     @expose('/approve/<id>', methods=('GET', 'POST'))
     def approve_view(self, id):
         id = decrypt_string(id)
@@ -445,12 +549,14 @@ class EventView(CustomModelView):
             return '<b>Event not found. Ensure URL is correct.</b>'
     
     def get_query(self):
-        if not Location.query.join(Location.calendar).filter(Calendar.users.any(User.id == g.user.id)).first():
+        if not Location.query.join(Location.calendar).\
+                              filter(Calendar.users.any(User.id == g.user.id)).first():
             flash('You need to add an approved venue before you can add an event.')
         if not Calendar.query.filter(Calendar.enabled == True).first():
             flash('You need to enable a calendar before you can add an event.')
         
-        return Event.query.join(Event.calendar).filter(Calendar.users.any(User.id == g.user.id))
+        return Event.query.join(Event.calendar).\
+                           filter(Calendar.users.any(User.id == g.user.id))
         
     def get_count_query(self):
         return self.session.query(db.func.count('*')).\
@@ -484,8 +590,10 @@ class EventView(CustomModelView):
         if getattr(self, 'calendar_id', None):
             return Location.query.filter(Location.calendar_id == self.calendar_id).all()
         else: # use logged in user's userid
-            return Location.query.join(Location.calendar).filter(Calendar.users.any(User.id == g.user.id)).all()
+            return Location.query.join(Location.calendar).\
+                                  filter(Calendar.users.any(User.id == g.user.id)).all()
         
     # ensure calendar object is both enabled for management and user.id matches
     def _get_parent_list_calendar(self):
-        return Calendar.query.filter(db.and_(Calendar.users.any(User.id == g.user.id), Calendar.enabled == True)).all()
+        return Calendar.query.filter(db.and_(Calendar.users.any(User.id == g.user.id), 
+                                             Calendar.enabled == True)).all()
