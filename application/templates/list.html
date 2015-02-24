@@ -34,12 +34,6 @@
             {{ new_actions(actions) }}
         {% endif %}
 
-        {% if actions %}
-        <li class="dropdown">
-            {{ actionlib.dropdown(actions) }}
-        </li>
-        {% endif %}
-
         {% if search_supported %}
         <li>
             {{ model_layout.search_form() }}
