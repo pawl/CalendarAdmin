@@ -348,11 +348,15 @@ class EventView(CustomModelView):
                             errors = True
                     
                     if meetup_venue_id:
+                        '''
+                            Meetup does not allows submitting timezone, so must
+                            convert to UTC
+                        '''
                         meetup_start = arrow.get(event_object.start, event_object.calendar.timezone)
-                        meetup_start = (meetup_start-meetup_start.dst()).to('utc').timestamp # adjust for dst and return timestamp
+                        meetup_start = meetup_start.to('utc').timestamp
                         
                         meetup_end = arrow.get(event_object.end, event_object.calendar.timezone)
-                        meetup_end = (meetup_end-meetup_end.dst()).to('utc').timestamp 
+                        meetup_end = meetup_end.to('utc').timestamp
                         
                         meetup_requestbody = {
                             "group_id": g.user.meetup_group_id,
