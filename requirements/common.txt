@@ -20,4 +20,4 @@ Flask-WTF==0.9.5
 six==1.7.3
 requests==2.3.0
 Pillow==2.5.3
--e git://github.com/mrjoes/flask-admin.git#egg=Flask-Admin
+-e git://github.com/mrjoes/flask-admin.git@90d4a1b116b26000bbeae77a13a10179cfb33aae#egg=Flask-Admin
