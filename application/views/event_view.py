@@ -257,7 +257,7 @@ class EventView(CustomModelView):
                 try:
                     existing_events = [
                         event for event in google_find_duplicates_response.data['items'] 
-                        if ((event_object.location.title == event['location']) or
+                        if ((event_object.location.title == event.get('location')) or
                             (event_object.summary == event['summary']))
                     ]
                 except KeyError:
