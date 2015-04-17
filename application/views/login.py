@@ -26,8 +26,9 @@ def login():
 	
 	try:
 		result = authomatic.login(WerkzeugAdapter(request, response), "google")
-	except FailureError: # happens when user denies access when asked for permission
+	except FailureError as e: # happens when user denies access when asked for permission
 		flash("Permission to access your calendar was denied.")
+		app.logger.error(str(e))
 		return redirect('/')
 	
 	if result:	
