@@ -428,9 +428,14 @@ class EventView(CustomModelView):
                     
                     # try to find a matching venue
                     eventbrite_venue_id = None
-                    for venue in eventbrite_venue_response.data['venues']:
-                        if event_object.location.title == venue['venue']['name']:
-                            eventbrite_venue_id = venue['venue']['id']
+                    
+                    try:
+                        for venue in eventbrite_venue_response.data['venues']:
+                            if event_object.location.title == venue['venue']['name']:
+                                eventbrite_venue_id = venue['venue']['id']
+                    except KeyError:
+                        app.logger.error(eventbrite_venue_response)
+                        raise
                     
                     # create a venue if one isn't found, possible bug: allows creating infinite duplicates
                     if eventbrite_venue_id is None:
