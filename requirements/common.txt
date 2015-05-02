@@ -1,4 +1,3 @@
-Authomatic==0.0.13
 Fabric==1.8.2
 Flask==0.10.1
 Flask-Login==0.2.11
@@ -20,4 +19,5 @@ Flask-WTF==0.9.5
 six==1.7.3
 requests==2.3.0
 Pillow==2.5.3
+-e git://github.com/pawl/authomatic.git@a36ec7ff6d5d321cbf1e92564b55028f56f6904c#egg=Authomatic
 -e git://github.com/mrjoes/flask-admin.git@90d4a1b116b26000bbeae77a13a10179cfb33aae#egg=Flask-Admin
