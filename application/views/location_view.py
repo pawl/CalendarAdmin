@@ -1,4 +1,3 @@
-import tempfile
 import requests
 import StringIO
 
@@ -7,7 +6,7 @@ from application.views.custom_model_view import CustomModelView
 from application.models import Location, Calendar, User
 from wtforms.validators import ValidationError, required
 from flask.ext.admin.form.upload import ImageUploadField, ImageUploadInput
-from flask import g, url_for
+from flask import g
 from application import app, db
 
 
@@ -22,17 +21,17 @@ class ModifiedImageUploadInput(ImageUploadInput):
         if field.url_relative_path:
             filename = filename
 
-        return 'http://i.imgur.com/' + filename + 't.jpg' # small thumbnail
+        return 'http://i.imgur.com/' + filename + 't.jpg'  # small thumbnail
 
 
 # override ImageUploadField to upload images to imgur instead
 # idea from quokka: https://github.com/pythonhub/quokka/blob/f89653bbe753319ca204d8e3aba482492f4858fe/quokka/core/admin/fields.py
 class ImgurImageField(ImageUploadField):
     widget = ModifiedImageUploadInput()
-    
+
     def _delete_file(self, filename):
         pass
-        
+
     def _save_file(self, data, filename):
         headers = {"Authorization": "Client-ID " + app.config.get("IMGUR_ID")}
         url = "https://api.imgur.com/3/upload.json"
@@ -42,11 +41,11 @@ class ImgurImageField(ImageUploadField):
         self.image.save(output, self.image.format)
         contents = output.getvalue()
         output.close()
-        
+
         request = requests.post(
-            url, 
-            headers = headers,
-            data = {
+            url,
+            headers=headers,
+            data={
                 'image': b64encode(contents),
             }
         )
@@ -55,15 +54,15 @@ class ImgurImageField(ImageUploadField):
 
 class LocationView(CustomModelView):
     # Override displayed fields
-    column_list = ('title','calendar')
-    
+    column_list = ('title', 'calendar')
+
     column_labels = {
         'title': 'Possible Event Location (free-form text)',
         'image_url': 'Image',
         'country': 'Country (2 Letter Code)',
         'state': 'State (Only US or CA, 2 Letters)'
     }
-    
+
     # TODO: fix - if multiple calendars have a location, it will clear all but 1
     form_columns = (
         'title',
@@ -76,7 +75,7 @@ class LocationView(CustomModelView):
         'calendar'
     )
     form_overrides = dict(image_url=ImgurImageField)
-    
+
     def states(form, field):
         states = [
             'AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC',
@@ -116,22 +115,22 @@ class LocationView(CustomModelView):
         ]
         if form.country.data not in countries:
             raise ValidationError('Must be a valid ISO-3166 country code.')
-    
+
     form_args = dict(
         state=dict(validators=[states]),
         country=dict(validators=[country_code]),
         calendar=dict(validators=[required()]),
     )
-    
+
     # This is required as long as the calendar is in the form.
     # override forms to prevent users from seeing eachother's data: https://gist.github.com/mrjoes/5521548
     # Hook form creation methods
     def create_form(self):
         return self._use_filtered_parent(super(LocationView, self).create_form())
- 
+
     def edit_form(self, obj):
         return self._use_filtered_parent(super(LocationView, self).edit_form(obj))
- 
+
     def _use_filtered_parent(self, form):
         form.calendar.query_factory = self._get_parent_list
         return form
@@ -142,7 +141,7 @@ class LocationView(CustomModelView):
     def get_query(self):
         return Location.query.join(Location.calendar).\
                               filter(Calendar.users.any(User.id == g.user.id))
-        
+
     def get_count_query(self):
         return self.session.query(db.func.count('*')).\
                             select_from(self.model).\

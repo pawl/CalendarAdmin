@@ -20,23 +20,25 @@ CSRF_ENABLED = True
 ENCRYPTION_KEY = os.environ['ENCRYPTION_KEY']
 
 AUTH = {
-	'google': {
-		'class_': oauth2.Google,
-		'consumer_key': os.environ['GOOGLE_CUSTOMER_KEY'],
-		'consumer_secret': os.environ['GOOGLE_CUSTOMER_SECRET'],
-		'id': 1,
-		'scope': ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/calendar'],
-	},
-	'meetup': {
-		'class_': oauth1.Meetup,
-		'consumer_key': os.environ['MEETUP_CUSTOMER_KEY'],
-		'consumer_secret': os.environ['MEETUP_CUSTOMER_SECRET'],
-		'id': 2,
-	},
-	'eventbrite': {
-		'class_': Eventbrite,
-		'consumer_key': os.environ['EVENTBRITE_CUSTOMER_KEY'],
-		'consumer_secret': os.environ['EVENTBRITE_CUSTOMER_SECRET'],
-		'id': 3,
-	},
+    'google': {
+        'class_': oauth2.Google,
+        'consumer_key': os.environ['GOOGLE_CUSTOMER_KEY'],
+        'consumer_secret': os.environ['GOOGLE_CUSTOMER_SECRET'],
+        'id': 1,
+        'scope': ['https://www.googleapis.com/auth/userinfo.profile',
+                  'https://www.googleapis.com/auth/userinfo.email',
+                  'https://www.googleapis.com/auth/calendar'],
+    },
+    'meetup': {
+        'class_': oauth1.Meetup,
+        'consumer_key': os.environ['MEETUP_CUSTOMER_KEY'],
+        'consumer_secret': os.environ['MEETUP_CUSTOMER_SECRET'],
+        'id': 2,
+    },
+    'eventbrite': {
+        'class_': Eventbrite,
+        'consumer_key': os.environ['EVENTBRITE_CUSTOMER_KEY'],
+        'consumer_secret': os.environ['EVENTBRITE_CUSTOMER_SECRET'],
+        'id': 3,
+    },
 }

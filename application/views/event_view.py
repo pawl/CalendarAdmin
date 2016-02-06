@@ -2,11 +2,9 @@ import urllib
 import json
 import datetime
 import wtforms
-import os
 import arrow
 
 from application.views.custom_model_view import CustomModelView
-from wtforms import form, fields, validators
 from wtforms.validators import ValidationError
 from application.models import Calendar, Event, Location, User
 from application.helpers import (decrypt_string, is_valid_credentials,
@@ -77,7 +75,7 @@ class EventView(CustomModelView):
         end=dict(
             validators=[end_must_be_greater, end_must_not_conflict],
             format='%Y-%m-%d %H:%M'
-        ), # required validator is not necessary, already included
+        ),  # required validator is not necessary, already included
         start=dict(
             validators=[start_must_not_conflict, must_be_future],
             format='%Y-%m-%d %H:%M'

@@ -1,15 +1,15 @@
 {% extends 'admin/master.html' %}
 
 {% block head_css %}
-	{{ super() }}
-	<link href="{{ url_for('static', filename='css/home.css') }}" rel="stylesheet">
+  {{ super() }}
+  <link href="{{ url_for('static', filename='css/home.css') }}" rel="stylesheet">
 {% endblock %}
 
 {% block sidebar_block %}
 <style>
 #page-wrapper {
-	margin: 0;
-	padding-top: 30px;
+  margin: 0;
+  padding-top: 30px;
 }
 </style>
 {% endblock %}
@@ -19,7 +19,7 @@
 {% block body %}
     <div class="container">
       <div class="jumbotron">
-		<h2>"Can you add this to the calendar for me?"</h2>
+    <h2>"Can you add this to the calendar for me?"</h2>
         <p class="lead">Calendar Admin allows you to generate a link that allows your users to submit new event requests to your group's Google Calendar.</p>
         <a class="btn btn-large btn-success" href="/login">Sign up for Free</a>
       </div>
@@ -27,9 +27,9 @@
       <div class="row marketing">
         <div class="col-lg-6">
           <h4>Better than e-mail</h4>
-          <p>No more questions about who to e-mail. Requests go into a "Pending" queue to prevent them from falling through the cracks.</p>  
-		  
-		  <h4>Use your existing calendar</h4>
+          <p>No more questions about who to e-mail. Requests go into a "Pending" queue to prevent them from falling through the cracks.</p>
+
+      <h4>Use your existing calendar</h4>
           <p>Your users are already subscribed to your current Google Calendar. This solution prevents the hassle of switching to something else.</p>
 
           <h4>Share the link</h4>
@@ -42,10 +42,10 @@
 
           <h4>Pre-defined venues</h4>
           <p>Don't let your users get your address wrong. You can pre-define a list of venues for your "Request Event" form.</p>
-		  
+
           <h4>Multiple administrators, one calendar</h4>
           <p>Who can approve requested events? Anyone who has edit access to the shared calendar (you also need to log into the application at least once).</p>
         </div>
       </div>
-	</div>
+  </div>
 {% endblock %}

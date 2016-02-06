@@ -15,9 +15,9 @@ app.config.from_envvar('PRODUCTION_SETTINGS', silent=True)
 
 # log to papertrail in heroku
 if not app.debug:
-	import logging
-	app.logger.addHandler(logging.StreamHandler())
-	app.logger.setLevel(logging.INFO)
+    import logging
+    app.logger.addHandler(logging.StreamHandler())
+    app.logger.setLevel(logging.INFO)
 
 flask_wtf.CsrfProtect(app)
 
@@ -29,8 +29,8 @@ mandrill = Mandrill(app)
 
 authomatic = Authomatic(app.config['AUTH'], app.config['SECRET_KEY'], report_errors=False)
 
-from application.views import *	 
-from application.hooks import *  
+from application.views import *
+from application.hooks import *
 
 admin = Admin(app, "Calendar Admin", static_url_path="/assets", base_template='base.html', index_view=MyAdminIndexView(name='Home', template='home.html', url='/'), template_mode='bootstrap3')
 admin.add_link(MenuLink(name='User Guide', url='https://docs.google.com/document/d/1w_L3S346encBQejQjBFWj2f1-25uVqxtfCQt5bzMd7Q/edit?usp=sharing', icon_type='glyph', icon_value='glyphicon-book'))

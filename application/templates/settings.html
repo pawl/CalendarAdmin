@@ -4,39 +4,39 @@
 {% block head %}
     {{ super() }}
     {{ lib.form_css() }}
-	<style>
-	#page-wrapper .glyphicon {
-		color: #fff;
-	}
-	</style>
+    <style>
+    #page-wrapper .glyphicon {
+        color: #fff;
+    }
+    </style>
 {% endblock %}
 
 {% block body %}
-	<div>
-	{% if meetup_enabled %}
-		<a class="btn btn-primary" href="/subaccount_logout/meetup/"><i class="glyphicon glyphicon-minus"></i> Unlink Meetup</a>
-	{% else %}
-		<form action="" method="POST" role="form" class="form-horizontal" enctype="multipart/form-data">
-			<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-			
-			<div class="input-group col-md-4">
-				<input class="form-control" name="meetup_url" id="meetup_url" type="text" placeholder="Meetup URL" required>
-				<span class="input-group-btn">
-					<button type="submit" class="btn btn-primary">
-						<i class="glyphicon glyphicon-plus"></i> Link Meetup
-					</button>
-				</span>
-			</div>
-		</form>
-	{% endif %}
-	</div>
-	
-	<div style="margin-top: 20px">
-	{% if eventbrite_enabled %}
-		<a class="btn btn-primary" href="/subaccount_logout/eventbrite/"><i class="glyphicon glyphicon-minus"></i> Unlink Eventbrite</a>
-	{% else %}
-		<a class="btn btn-primary" href="/subaccount_login/eventbrite/"><i class="glyphicon glyphicon-plus"></i> Link Eventbrite</a>
-	{% endif %}
+    <div>
+    {% if meetup_enabled %}
+        <a class="btn btn-primary" href="/subaccount_logout/meetup/"><i class="glyphicon glyphicon-minus"></i> Unlink Meetup</a>
+    {% else %}
+        <form action="" method="POST" role="form" class="form-horizontal" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="input-group col-md-4">
+                <input class="form-control" name="meetup_url" id="meetup_url" type="text" placeholder="Meetup URL" required>
+                <span class="input-group-btn">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="glyphicon glyphicon-plus"></i> Link Meetup
+                    </button>
+                </span>
+            </div>
+        </form>
+    {% endif %}
+    </div>
+
+    <div style="margin-top: 20px">
+    {% if eventbrite_enabled %}
+        <a class="btn btn-primary" href="/subaccount_logout/eventbrite/"><i class="glyphicon glyphicon-minus"></i> Unlink Eventbrite</a>
+    {% else %}
+        <a class="btn btn-primary" href="/subaccount_login/eventbrite/"><i class="glyphicon glyphicon-plus"></i> Link Eventbrite</a>
+    {% endif %}
     </div>
 {% endblock %}
 

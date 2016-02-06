@@ -18,12 +18,12 @@
       {% if item.is_accessible() and item.is_visible() %}
         {% if item.is_active(admin_view) %}<li class="active">{% else %}<li>{% endif %}
           <a href="{{ item.get_url() }}">
-		  {# TODO: add ICON to the model rather than hardcoding #}
-		  {% if item.name == "Approved Venues" %}<span class="glyphicon glyphicon-home"></span>
-		  {% elif item.name == "My Calendars" %}<span class="glyphicon glyphicon-calendar"></span> 
-		  {% elif item.name == "Pending Events" %}<span class="glyphicon glyphicon-time"></span> 
-		  {% endif %}
-		  {{ item.name }}</a>
+      {# TODO: add ICON to the model rather than hardcoding #}
+      {% if item.name == "Approved Venues" %}<span class="glyphicon glyphicon-home"></span>
+      {% elif item.name == "My Calendars" %}<span class="glyphicon glyphicon-calendar"></span>
+      {% elif item.name == "Pending Events" %}<span class="glyphicon glyphicon-time"></span>
+      {% endif %}
+      {{ item.name }}</a>
         </li>
       {% endif %}
     {% endif %}
@@ -35,10 +35,10 @@
     {% if item.is_accessible() and item.is_visible() %}
       <li>
         <a href="{{ item.get_url() }}">{% if item.name == "Logout" %}<span class="glyphicon glyphicon-log-out"></span>
-		  {% elif item.name == "Login With Google" %}<span class="glyphicon glyphicon-log-in"></span> 
-		  {% elif item.name == "User Guide" %}<span class="glyphicon glyphicon-book"></span> 
-		  {% endif %}
-		  {{ item.name }}</a>
+      {% elif item.name == "Login With Google" %}<span class="glyphicon glyphicon-log-in"></span>
+      {% elif item.name == "User Guide" %}<span class="glyphicon glyphicon-book"></span>
+      {% endif %}
+      {{ item.name }}</a>
       </li>
     {% endif %}
   {% endfor %}
@@ -54,7 +54,7 @@
         {% else %}
         <div class="alert alert-dismissable">
         {% endif %}
-	      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
           {{ m }}
         </div>
       {% endfor %}
