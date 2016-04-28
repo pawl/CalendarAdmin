@@ -9,11 +9,12 @@ from wtforms.validators import ValidationError
 from application.models import Calendar, Event, Location, User
 from application.helpers import (decrypt_string, is_valid_credentials,
                                  credentials, encrypt_string, add_tags_to_urls)
-from application import app, db, mandrill, authomatic
+from application import app, db, authomatic
 from flask import request, redirect, flash, url_for, g, get_flashed_messages
 from flask.ext.admin import expose
 from flask.ext.admin.actions import action
 from sqlalchemy.orm.exc import NoResultFound
+from sparkpost import SparkPost
 
 
 class EventView(CustomModelView):
@@ -140,11 +141,13 @@ class EventView(CustomModelView):
                    event.to_eventbrite, event.location.title, approve_url,
                    deny_url, modify_url)
 
-            email_addresses = [{'email': user.email} for user in result_calendar.users]
-            mandrill.send_email(
+            email_addresses = [user.email for user in result_calendar.users]
+
+            sp = SparkPost(app.config['SPARKPOST_API_KEY'])
+            sp.transmissions.send(
                 from_email="admin@calendaradmin.com",
                 subject="New Calendar Admin Request",
-                to=email_addresses,
+                recipients=email_addresses,
                 text=text.replace('    ','')  # remove wacky indentions
             )
 
@@ -504,15 +507,16 @@ class EventView(CustomModelView):
                            event_object.location.title)
 
                     email_addresses = [
-                        {'email': user.email} for user in event_object.calendar.users
+                        user.email for user in event_object.calendar.users
                         if user.email != g.user.email
-                    ] + [{'email': event_object.requester_email}]
+                    ] + [event_object.requester_email]
 
-                    mandrill.send_email(
-                        from_email="admin@gcalmanager.com",
+                    sp = SparkPost(app.config['SPARKPOST_API_KEY'])
+                    sp.transmissions.send(
+                        from_email="admin@calendaradmin.com",
                         subject="Calendar Admin Request Approved",
-                        to=email_addresses,
-                        text=text.replace('    ','') # remove wacky indentions
+                        recipients=email_addresses,
+                        text=text.replace('    ','')  # remove wacky indentions
                     )
 
                     # delete item on approval

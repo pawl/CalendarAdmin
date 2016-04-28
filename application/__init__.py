@@ -3,7 +3,6 @@ from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 from authomatic import Authomatic
 from flask.ext.login import LoginManager
-from flask.ext.mandrill import Mandrill
 from flask.ext.admin import Admin
 from flask.ext.admin.menu import MenuLink
 
@@ -24,8 +23,6 @@ flask_wtf.CsrfProtect(app)
 lm = LoginManager()
 lm.init_app(app)
 lm.login_view = 'login'
-
-mandrill = Mandrill(app)
 
 authomatic = Authomatic(app.config['AUTH'], app.config['SECRET_KEY'], report_errors=False)
 

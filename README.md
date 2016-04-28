@@ -1,7 +1,7 @@
 Calendar Admin
 ---
 
-Calendar Admin adds the ability to send requests to the administrators to have events added to the organization's Google Calendar, Meetup.com, and Eventbrite. 
+Calendar Admin adds the ability to send requests to the administrators to have events added to the organization's Google Calendar, Meetup.com, and Eventbrite.
 
 It allows you to generate a link to use for an "Add Event" button above your calendar, so your users can request to have events added to your calendars.
 
@@ -21,7 +21,7 @@ Requests are approved or denied by calendar administrators via e-mail or the web
 * OAUTH authentication with google calendar, meetup, and eventbrite made easier by Authomatic.
 * Used https://github.com/albertogg/flask-bootstrap-skel for initial boilerplate.
 * Admin interface is using the SB Admin 2 theme: http://startbootstrap.com/template-overviews/sb-admin-2/
-* Email is handled using Mandrill.
+* Email is handled using SparkPost.
 * Alembic is used for database migrations.
 * Uses Imgur's API for hosting location images and resizing. Thanks Imgur!
 
@@ -34,7 +34,7 @@ Requests are approved or denied by calendar administrators via e-mail or the web
 
 ### Setup For Development
 1. Run "pip install -r requirements/dev.txt" to install requirements.
-2. Initialize the DB by running: 
+2. Initialize the DB by running:
     ```
     $ fab shell
     >>> db.create_all()
@@ -52,7 +52,7 @@ Requests are approved or denied by calendar administrators via e-mail or the web
       * Use http://www.your_domain.com:8080/login for the AUTHORIZED REDIRECT URI, leave the AUTHORIZED JAVASCRIPT ORIGINS as example.com.
       * GOOGLE_CUSTOMER_KEY  - Use "CLIENT ID"
       * GOOGLE_CUSTOMER_SECRET - Use "CLIENT SECRET"
- * MANDRILL_API_KEY - Get an API key from the Mandrill settings page, also follow their instructions to set the appropriate DNS settings on your domain. This is required to send email.
+ * SPARKPOST_API_KEY - Get an API key from the SparkPost settings page, also follow their instructions to set the appropriate DNS settings on your domain. This is required to send email.
  * IMGUR_ID - Log into imgur and go to https://imgur.com/account/settings/apps. You just need the client_id. This is for the images of locations.
  * ENCRYPTION_KEY - Any 16 or 32 characters. This is used for encrypting info in urls.
  * EVENTBRITE_CUSTOMER_KEY & EVENTBRITE_CUSTOMER_SECRET - Once you log into your eventbrite account, go to https://www.eventbrite.com/myaccount/apps/ and register your application. Use http://www.your_domain.com/subaccount_login/eventbrite for the OAuth Redirect URI.
@@ -61,7 +61,7 @@ Requests are approved or denied by calendar administrators via e-mail or the web
 
 Your etc/environment file should end up having these lines:
 ```
-MANDRILL_API_KEY='secret'
+SPARKPOST_API_KEY='secret'
 SECRET_KEY='secret'
 DOMAIN_NAME='www.yourdomain.com'
 ENCRYPTION_KEY='1111111111111111'
@@ -76,7 +76,7 @@ EVENTBRITE_CUSTOMER_SECRET='secret'
 
 ### Setup For Production
 * Set environmental variables on heroku:
- * heroku config:add PRODUCTION_SETTINGS='production_settings.py' MANDRILL_API_KEY='secret' SECRET_KEY='secret' DOMAIN_NAME='www.yourdomain.com' ENCRYPTION_KEY='secret' GOOGLE_CUSTOMER_KEY='secret' GOOGLE_CUSTOMER_SECRET='secret' MEETUP_CUSTOMER_KEY='secret' MEETUP_CUSTOMER_SECRET='secret' IMGUR_ID='aaaaaaaaaaaaaaa' EVENTBRITE_CUSTOMER_KEY='secret' EVENTBRITE_CUSTOMER_SECRET='secret
+ * heroku config:add PRODUCTION_SETTINGS='production_settings.py' SPARKPOST_API_KEY='secret' SECRET_KEY='secret' DOMAIN_NAME='www.yourdomain.com' ENCRYPTION_KEY='secret' GOOGLE_CUSTOMER_KEY='secret' GOOGLE_CUSTOMER_SECRET='secret' MEETUP_CUSTOMER_KEY='secret' MEETUP_CUSTOMER_SECRET='secret' IMGUR_ID='aaaaaaaaaaaaaaa' EVENTBRITE_CUSTOMER_KEY='secret' EVENTBRITE_CUSTOMER_SECRET='secret
   * heroku config:set PYTHONPATH='fakepath'
 * https://github.com/albertogg/flask-bootstrap-skel#production-configuration
 
